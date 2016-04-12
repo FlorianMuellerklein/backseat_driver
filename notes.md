@@ -25,3 +25,5 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 
 * SGD instead of ADAM, SGD should reach better accuracy but slower training.
 * Random forest output split, like in class project
+* Test whether LR flips hurt scores
+* Start testing single models instead of ensembles, then ensemble best singles for final submission

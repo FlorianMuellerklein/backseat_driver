@@ -12,14 +12,18 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * Individual models get 99.5-99.9%
 * Submission score - 1.03804
 
-## Things currently trying
+## Things that have worked well
 
 ### ResNet56
 * Initial filter num - 32
 * L2 regularization - 0.0001 (same as paper)
 * ADAM for 60 epoch - lr_schedule = {0:0.001, 15:0.0001, 30:0.0001, 50:0.00001}
 * Individual accuracy - 99.7%
-* Submission score - TBD (do this today)
+* Submission score - 0.7132
+
+## Things currently trying
+
+* add flipud to current best ResNet try
 
 ## To try later
 

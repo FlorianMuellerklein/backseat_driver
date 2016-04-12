@@ -8,18 +8,43 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * Initial filter num - 16
 * No L2 regularization
 * Option A (Identity shortcuts)
-* trained with ADAM for 60 epoch- lr_schedule = {0:0.003, 15:0.0003, 35:0.0003, 50:0.0001}
+* trained with ADAM for 60 epoch- lr_schedule = {0:0.003, 15:0.0003, 35:0.00003, 50:0.00001}
 * Individual models get 99.5-99.9%
 * Submission score - 1.03804
+
+### Current Data augmentation
+* rotation - (-15,15)
+* translation - (-6,6)
+* zoom - (0.8,1.2)
+* flip_lr - True (50%)
+* flip_ud - False
+* RGB intensity - (-25,25)
 
 ## Things that have worked well
 
 ### ResNet56
 * Initial filter num - 32
 * L2 regularization - 0.0001 (same as paper)
-* ADAM for 60 epoch - lr_schedule = {0:0.001, 15:0.0001, 30:0.0001, 50:0.00001}
+* ADAM for 60 epoch - lr_schedule = {0:0.001, 15:0.0001, 30:0.00001, 50:0.000001}
+* Projection option
 * Individual accuracy - 99.7%
-* Submission score - 0.7132
+* Submission score - 0.71352
+
+### ResNet34
+* Initial filter num - 16
+* ADAM for 60 epoch - lr_schedule = {0:0.001, 15:0.0001, 30:0.00001, 50:0.000001}
+* Identity option
+* Individual models get 99.5-99.9%
+* Submission score - 1.03804
+
+
+### vgg16
+* Initial filter num -64
+* ADAM for 60 epoch - lr_schedule = {0:0.003, 15:0.0003, 30:0.00003, 50:0.00001}
+* Increasing dropout per pool & hidden - (0.25,0.35,0.45,0.5,0.5,0.5,0.5)
+* CNN filters init - Orthogonal
+* hidden init - HeNormal
+Submission score - 1.05536
 
 ## Things currently trying
 

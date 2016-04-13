@@ -10,7 +10,8 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * Option A (Identity shortcuts)
 * trained with ADAM for 60 epoch- lr_schedule = {0:0.003, 15:0.0003, 35:0.00003, 50:0.00001}
 * Individual models get 99.5-99.9%
-* Submission score - 1.03804
+* Single model submission score - 1.03804
+* Ensemble submission score - 0.38794
 
 ### Current Data augmentation
 * rotation - (-15,15)
@@ -28,8 +29,9 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * ADAM for 60 epoch - lr_schedule = {0:0.001, 15:0.0001, 30:0.00001, 50:0.000001}
 * Projection option
 * With flip_ud augmentation
-* Individual accuracy - 99.7%
+* Individual accuracy - 99.5%
 * Submission score - 0.63255
+* Batch size - 32
 
 ### ResNet56
 * Initial filter num - 32
@@ -38,6 +40,18 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * Projection option
 * Individual accuracy - 99.7%
 * Submission score - 0.71352
+* Batch size - 32
+
+### ResNet56
+* Initial filter num - 64
+* L2 regularization - 0.0001 (same as paper)
+* ADAM for 60 epoch - lr_schedule = {0:0.001, 15:0.0001, 30:0.00001, 50:0.000001}
+* Projection option
+* With flip_ud augmentation
+* Individual accuracy - 99.1%
+* Submission score - 0.82991
+* Batch size - 16
+
 
 ### ResNet34
 * Initial filter num - 16
@@ -45,19 +59,20 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * Identity option
 * Individual models get 99.5-99.9%
 * Submission score - 1.03804
+* Batch size - 32
 
-
-### vgg16
+### VGG16
 * Initial filter num -64
 * ADAM for 60 epoch - lr_schedule = {0:0.003, 15:0.0003, 30:0.00003, 50:0.00001}
 * Increasing dropout per pool & hidden - (0.25,0.35,0.45,0.5,0.5,0.5,0.5)
 * CNN filters init - Orthogonal
 * hidden init - HeNormal
-Submission score - 1.05536
+* Submission score - 1.05536
+* Batch size - 32
 
 ## Things currently trying
 
-* add flipud to current best ResNet try
+* ResNet56 with 64 filter channels in first layer. And flip_ud augmentation. Batch size - 16 (due to memory) -- Must run for more epoch only got to 99.1% accuracy
 
 ## To try later
 

@@ -3,13 +3,9 @@ import glob
 import math
 import random
 import numpy as np
-import pandas as pd
-from scipy.linalg import eigh
-from scipy.linalg import svd
 
 from sklearn.utils import shuffle
-from sklearn.base import TransformerMixin, BaseEstimator
-from sklearn.preprocessing import LabelBinarizer, StandardScaler
+from sklearn.preprocessing import LabelBinarizer
 from sklearn.cross_validation import train_test_split
 from sklearn.manifold import TSNE
 
@@ -136,14 +132,14 @@ def batch_iterator_train(data, y, batchsize, train_fn):
         crop_amt = ((4 - trans_1, 4 + trans_1), (4 - trans_2, 4 + trans_2))
 
         # random zooms
-        zoom = random.uniform(0.9, 1.1)
+        zoom = random.uniform(0.8, 1.2)
 
         # shearing
-        shear_deg = random.uniform(-5, 5)
+        shear_deg = random.uniform(-5,5)
 
         # random clips bool
         flip_lr = random.randint(0,1)
-        #flip_ud = random.randint(0,1)
+        flip_ud = random.randint(0,1)
 
         # set the transform parameters for skimage.transform.warp
         # have to shift to center and then shift back after transformation otherwise
@@ -178,8 +174,8 @@ def batch_iterator_train(data, y, batchsize, train_fn):
                 X_batch_aug[j,k] = fast_warp(X_batch[j,k], tform, output_shape=(PIXELS,PIXELS))
                 if flip_lr == 1:
                     X_batch_aug[j,k] = np.fliplr(X_batch[j,k])
-                #if flip_ud == 1:
-                #    X_batch_aug[j,k] = np.flipud(X_batch[j,k])
+                if flip_ud == 1:
+                    X_batch_aug[j,k] = np.flipud(X_batch[j,k])
 
                 #img_crop = crop(X_batch_aug[j,k], crop_amt)
                 #X_batch_aug[j,k] = transform.resize(img_crop, output_shape=(PIXELS, PIXELS))

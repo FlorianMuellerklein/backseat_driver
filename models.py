@@ -1,4 +1,5 @@
-
+import sys
+sys.setrecursionlimit(10000)
 import lasagne
 from lasagne.nonlinearities import rectify, softmax, sigmoid
 from lasagne.layers import InputLayer, MaxPool2DLayer, DenseLayer, DropoutLayer, helper, batch_norm
@@ -57,9 +58,50 @@ def vgg16(input_var=None):
 
     return l_out
 
-def ResNet34(input_var=None, n=5):
+def vgg16_fc7(input_var=None):
+    l_in = InputLayer(shape=(None, 3, PIXELS, PIXELS), input_var=input_var)
+
+    l_conv1a = batch_norm(ConvLayer(l_in, num_filters=64, filter_size=3, pad=1, W=ortho, nonlinearity=rectify))
+    l_conv1b = batch_norm(ConvLayer(l_conv1a, num_filters=64, filter_size=3, pad=1, W=ortho, nonlinearity=rectify))
+    l_pool1 = MaxPool2DLayer(l_conv1b, pool_size=2) # feature maps 32x32
+    l_conv1_dropout = DropoutLayer(l_pool1, p=0.25)
+
+    l_conv2a = batch_norm(ConvLayer(l_conv1_dropout, num_filters=128, filter_size=3, pad=1, W=ortho, nonlinearity=rectify))
+    l_conv2b = batch_norm(ConvLayer(l_conv2a, num_filters=128, filter_size=3, pad=1, W=ortho, nonlinearity=rectify))
+    l_pool2 = MaxPool2DLayer(l_conv2b, pool_size=2) # feature maps 16x16
+    l_conv2_dropout = DropoutLayer(l_pool2, p=0.35)
+
+    l_conv3a = batch_norm(ConvLayer(l_conv2_dropout, num_filters=256, filter_size=3, pad=1, W=ortho, nonlinearity=rectify))
+    l_conv3b = batch_norm(ConvLayer(l_conv3a, num_filters=256, filter_size=3, pad=1, W=ortho, nonlinearity=rectify))
+    l_conv3c = batch_norm(ConvLayer(l_conv3b, num_filters=256, filter_size=3, pad=1, W=ortho, nonlinearity=rectify))
+    l_pool3 = MaxPool2DLayer(l_conv3c, pool_size=2) # feature maps 8x8
+    l_conv3_dropout = DropoutLayer(l_pool3, p=0.45)
+
+    l_conv4a = batch_norm(ConvLayer(l_conv3_dropout, num_filters=512, filter_size=3, pad=1, W=ortho, nonlinearity=rectify))
+    l_conv4b = batch_norm(ConvLayer(l_conv4a, num_filters=512, filter_size=3, pad=1, W=ortho, nonlinearity=rectify))
+    l_conv4c = batch_norm(ConvLayer(l_conv4b, num_filters=512, filter_size=3, pad=1, W=ortho, nonlinearity=rectify))
+    l_pool4 = MaxPool2DLayer(l_conv4c, pool_size=2) # feature maps 4x4
+    l_conv4_dropout = DropoutLayer(l_pool4, p=0.5)
+
+    l_conv5a = batch_norm(ConvLayer(l_conv4_dropout, num_filters=512, filter_size=3, pad=1, W=ortho, nonlinearity=rectify))
+    l_conv5b = batch_norm(ConvLayer(l_conv5a, num_filters=512, filter_size=3, pad=1, W=ortho, nonlinearity=rectify))
+    l_conv5c = batch_norm(ConvLayer(l_conv5b, num_filters=512, filter_size=3, pad=1, W=ortho, nonlinearity=rectify))
+    l_pool5 = MaxPool2DLayer(l_conv5c, pool_size=2) # feature maps 2x2
+    l_conv5_dropout = DropoutLayer(l_pool5, p=0.5)
+
+    l_hidden1 = batch_norm(DenseLayer(l_conv5_dropout, num_units=1024, W=he_norm, nonlinearity=rectify))
+    l_dropout1 = DropoutLayer(l_hidden1, p=0.5)
+
+    l_hidden2 = batch_norm(DenseLayer(l_dropout1, num_units=1024, W=he_norm, nonlinearity=rectify))
+    l_dropout2 = DropoutLayer(l_hidden2, p=0.5)
+
+    l_out = DenseLayer(l_dropout2, num_units=10, W=xavier_norm, nonlinearity=softmax)
+
+    return l_out, l_hidden2
+
+def ResNet34(input_var=None, n=9):
     # create a residual learning building block with two stacked 3x3 convlayers as in paper
-    def residual_block(l, increase_dim=False, projection=False):
+    def residual_block(l, increase_dim=False, projection=True):
         input_num_filters = l.output_shape[1]
         if increase_dim:
             first_stride = (2,2)
@@ -92,7 +134,7 @@ def ResNet34(input_var=None, n=5):
     l_in = InputLayer(shape=(None, 3, PIXELS, PIXELS), input_var=input_var)
 
     # first layer, output is 16 x 32 x 32
-    l = batch_norm(Conv2DDNNLayer(l_in, num_filters=16, filter_size=(3,3), stride=(1,1), nonlinearity=rectify, pad='same', W=lasagne.init.HeNormal(gain='relu')))
+    l = batch_norm(Conv2DDNNLayer(l_in, num_filters=32, filter_size=(3,3), stride=(1,1), nonlinearity=rectify, pad='same', W=lasagne.init.HeNormal(gain='relu')))
 
     # first stack of residual blocks, output is 16 x 32 x 32
     for _ in range(n):

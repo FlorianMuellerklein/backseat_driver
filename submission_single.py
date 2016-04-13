@@ -45,7 +45,7 @@ X_test, X_test_id = load_test(cache=True)
 
 
 # load network weights
-f = gzip.open('data/weights/weights_augmentation_resnet.pklz', 'rb')
+f = gzip.open('data/weights/weights_resnet56_flipud.pklz', 'rb')
 all_params = pickle.load(f)
 f.close()
 helper.set_all_param_values(output_layer, all_params)
@@ -70,7 +70,7 @@ def create_submission(predictions, test_id):
     if not os.path.isdir('subm'):
         os.mkdir('subm')
     suffix = str(now.strftime("%Y-%m-%d-%H-%M"))
-    sub_file = os.path.join('subm', 'submission_resnet.csv')
+    sub_file = os.path.join('subm', 'submission_resnet56_flipud.csv')
     result1.to_csv(sub_file, index=False)
 
 create_submission(predictions, X_test_id)

@@ -1,4 +1,4 @@
-# Distracted Driver State Farm Kaggle Challenge nonlinearities
+# Distracted Driver State Farm Kaggle Challenge
 
 Given a dataset of 2D dashboard camera images, State Farm is challenging Kagglers to classify each driver's behavior. Are they driving attentively, wearing their seatbelt, or taking a selfie with their friends in the backseat?
 
@@ -21,6 +21,15 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * RGB intensity - (-25,25)
 
 ## Things that have worked well
+
+### ResNet56
+* Initial filter num - 32
+* L2 regularization - 0.0001 (same as paper)
+* ADAM for 60 epoch - lr_schedule = {0:0.001, 15:0.0001, 30:0.00001, 50:0.000001}
+* Projection option
+* With flip_ud augmentation
+* Individual accuracy - 99.7%
+* Submission score - 0.63255
 
 ### ResNet56
 * Initial filter num - 32

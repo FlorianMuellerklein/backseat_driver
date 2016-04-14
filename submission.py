@@ -46,7 +46,7 @@ X_test, X_test_id = load_test(cache=True)
 nn_count = 1
 for ensb in range(15):
     # load network weights
-    f = gzip.open('data/weights/weights_resnet34_' + str(nn_count) + '.pklz', 'rb')
+    f = gzip.open('data/weights/weights_resnet56_32ch' + str(nn_count) + '.pklz', 'rb')
     all_params = pickle.load(f)
     f.close()
     helper.set_all_param_values(output_layer, all_params)

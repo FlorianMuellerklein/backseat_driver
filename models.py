@@ -99,7 +99,7 @@ def vgg16_fc7(input_var=None):
 
     return l_out, l_hidden2
 
-def ResNet34(input_var=None, n=9):
+def ResNet56(input_var=None, n=9):
     # create a residual learning building block with two stacked 3x3 convlayers as in paper
     def residual_block(l, increase_dim=False, projection=True):
         input_num_filters = l.output_shape[1]
@@ -133,19 +133,19 @@ def ResNet34(input_var=None, n=9):
     # Building the network
     l_in = InputLayer(shape=(None, 3, PIXELS, PIXELS), input_var=input_var)
 
-    # first layer, output is 16 x 32 x 32
+    # first layer, output is 64 x 32 x 32
     l = batch_norm(Conv2DDNNLayer(l_in, num_filters=32, filter_size=(3,3), stride=(1,1), nonlinearity=rectify, pad='same', W=lasagne.init.HeNormal(gain='relu')))
 
-    # first stack of residual blocks, output is 16 x 32 x 32
+    # first stack of residual blocks, output is 32 x 32 x 32
     for _ in range(n):
         l = residual_block(l)
 
-    # second stack of residual blocks, output is 32 x 16 x 16
+    # second stack of residual blocks, output is 64 x 16 x 16
     l = residual_block(l, increase_dim=True)
     for _ in range(1,n):
         l = residual_block(l)
 
-    # third stack of residual blocks, output is 64 x 8 x 8
+    # third stack of residual blocks, output is 128 x 8 x 8
     l = residual_block(l, increase_dim=True)
     for _ in range(1,n):
         l = residual_block(l)

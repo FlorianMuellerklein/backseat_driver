@@ -45,13 +45,22 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 ### ResNet56
 * Initial filter num - 64
 * L2 regularization - 0.0001 (same as paper)
+* ADAM for 80 epoch - lr_schedule = {0: 0.001, 25: 0.0001, 50: 0.00001, 65: 0.000001}
+* Projection option
+* With flip_ud augmentation
+* Individual accuracy - 99.6%
+* Submission score - 0.73603
+* Batch size - 32
+
+### ResNet56
+* Initial filter num - 64
+* L2 regularization - 0.0001 (same as paper)
 * ADAM for 60 epoch - lr_schedule = {0:0.001, 15:0.0001, 30:0.00001, 50:0.000001}
 * Projection option
 * With flip_ud augmentation
 * Individual accuracy - 99.1%
 * Submission score - 0.82991
 * Batch size - 16
-
 
 ### ResNet34
 * Initial filter num - 16
@@ -62,17 +71,17 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * Batch size - 32
 
 ### VGG16
-* Initial filter num -64
+* Initial filter num - 64
 * ADAM for 60 epoch - lr_schedule = {0:0.003, 15:0.0003, 30:0.00003, 50:0.00001}
 * Increasing dropout per pool & hidden - (0.25,0.35,0.45,0.5,0.5,0.5,0.5)
 * CNN filters init - Orthogonal
-* hidden init - HeNormal
+* Hidden init - HeNormal
 * Submission score - 1.05536
 * Batch size - 32
 
 ## Things currently trying
 
-* ResNet56 with 64 filter channels in first layer. And flip_ud augmentation. Batch size - 16 (due to memory) -- Must run for more epoch only got to 99.1% accuracy
+* Ensemble of 10 ResNet56, 32 initial channel, flip_ud
 
 ## To try later
 
@@ -80,3 +89,4 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * Random forest output split, like in class project
 * Test whether LR flips hurt scores
 * Start testing single models instead of ensembles, then ensemble best singles for final submission
+* Train ResNet56 with 64 channel for longer than 80 epoch, score dropped from 60 to 80, maybe try 120

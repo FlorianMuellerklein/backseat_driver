@@ -118,6 +118,7 @@ def batch_iterator_train(data, y, batchsize, train_fn):
     n_samples = data.shape[0]
     data, y = shuffle(data, y)
     loss = []
+    acc_train = 0.
     for i in range((n_samples + batchsize - 1) // batchsize):
         sl = slice(i * batchsize, (i + 1) * batchsize)
         X_batch = data[sl]
@@ -192,27 +193,21 @@ def batch_iterator_train(data, y, batchsize, train_fn):
         #plot_sample(X_batch_aug[0] / img_max)
 
         # fit model on each batch
-        loss.append(train_fn(X_batch_aug, y_batch))
+        loss_tt, acc_tt = train_fn(X_batch_aug, y_batch)
+        loss.append(loss_tt)
+        acc_train += acc_tt
 
-    return np.mean(loss)
-
-def iterate_minibatches(inputs, targets, batchsize):
-    assert len(inputs) == len(targets)
-    indices = np.arange(len(inputs))
-    np.random.shuffle(indices)
-    for start_idx in range(0, len(inputs) - batchsize + 1, batchsize):
-        excerpt = indices[start_idx:start_idx + batchsize]
-        yield inputs[excerpt], targets[excerpt]
+    return np.mean(loss), acc_train / n_samples
 
 def batch_iterator_valid(data_test, y_test, valid_fn):
     '''
     Batch iterator for fine tuning network, no augmentation.
     '''
 
-    n_samples = data_test.shape[0]
+    n_samples_valid = data_test.shape[0]
     loss_valid = []
     acc_valid = 0.
-    for i in range((n_samples + 1 - 1) // 1):
+    for i in range((n_samples_valid + 1 - 1) // 1):
         sl = slice(i * 1, (i + 1) * 1)
         X_batch_test = data_test[sl]
         y_batch_test = y_test[sl]
@@ -224,4 +219,4 @@ def batch_iterator_valid(data_test, y_test, valid_fn):
     # print statements for debugging, check if test images look like train images
     #plot_sample((X_batch_test[0] / np.amax(X_batch_test)))
 
-    return np.mean(loss_valid), acc_valid / n_samples
+    return np.mean(loss_valid), acc_valid / n_samples_valid

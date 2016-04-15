@@ -85,8 +85,14 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 
 ## To try later
 
+* Whatever my best ensemble is, add test time augmentations (without flipping)
 * SGD instead of ADAM, SGD should reach better accuracy but slower training.
-* Random forest output split, like in class project
 * Test whether LR flips hurt scores
 * Start testing single models instead of ensembles, then ensemble best singles for final submission
 * Train ResNet56 with 64 channel for longer than 80 epoch, score dropped from 60 to 80, maybe try 120
+* Train any models for longer than 60 to see if the scores become more stable.
+* Train models without lr_decay and look at plots to get an idea about the best decay points. (ResNets use decay points from VGG training, might not be optimal)
+
+## Things that didn't really work out
+
+* Random forest on fc7 features. The thought was that it might draw very different decision boundaries through the learned ConvNet feature representations than the softmax. So it might be useful to blend with the softmax predictions.

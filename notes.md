@@ -81,7 +81,7 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 
 ## Things currently trying
 
-* Ensemble of 10 ResNet56, 32 initial channel, flip_ud
+* Ensemble of 15 ResNet56, 16 initial channel, no flip_ud (32 init channel had memory issues), L2
 
 ## To try later
 

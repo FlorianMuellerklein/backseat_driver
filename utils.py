@@ -140,7 +140,7 @@ def batch_iterator_train(data, y, batchsize, train_fn):
 
         # random clips bool
         flip_lr = random.randint(0,1)
-        flip_ud = random.randint(0,1)
+        #flip_ud = random.randint(0,1)
 
         # set the transform parameters for skimage.transform.warp
         # have to shift to center and then shift back after transformation otherwise
@@ -175,8 +175,8 @@ def batch_iterator_train(data, y, batchsize, train_fn):
                 X_batch_aug[j,k] = fast_warp(X_batch[j,k], tform, output_shape=(PIXELS,PIXELS))
                 if flip_lr == 1:
                     X_batch_aug[j,k] = np.fliplr(X_batch[j,k])
-                if flip_ud == 1:
-                    X_batch_aug[j,k] = np.flipud(X_batch[j,k])
+                #if flip_ud == 1:
+                #    X_batch_aug[j,k] = np.flipud(X_batch[j,k])
 
                 #img_crop = crop(X_batch_aug[j,k], crop_amt)
                 #X_batch_aug[j,k] = transform.resize(img_crop, output_shape=(PIXELS, PIXELS))
@@ -193,11 +193,9 @@ def batch_iterator_train(data, y, batchsize, train_fn):
         #plot_sample(X_batch_aug[0] / img_max)
 
         # fit model on each batch
-        loss_tt, acc_tt = train_fn(X_batch_aug, y_batch)
-        loss.append(loss_tt)
-        acc_train += acc_tt
+        loss = train_fn(X_batch_aug, y_batch)
 
-    return np.mean(loss), acc_train / n_samples
+    return np.mean(loss)
 
 def batch_iterator_valid(data_test, y_test, valid_fn):
     '''

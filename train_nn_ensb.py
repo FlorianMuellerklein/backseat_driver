@@ -13,7 +13,7 @@ from lasagne.layers import helper
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.manifold import TSNE
 
-from models import vgg16, ResNet56
+from models import vgg16, ResNet
 from utils import load_train_cv, batch_iterator_train, batch_iterator_valid
 
 from matplotlib import pyplot
@@ -22,9 +22,8 @@ from matplotlib import pyplot
 BATCHSIZE = 32
 LR_SCHEDULE = {
     0: 0.001,
-    15: 0.0001,
-    30: 0.00001,
-    50: 0.000001
+    30: 0.0001,
+    65: 0.00001
 }
 
 # T-SNE
@@ -41,7 +40,7 @@ for ensb in range(15):
     Y = T.ivector('y')
 
     # set up theano functions to generate output by feeding data through network, any test outputs should be deterministic
-    output_layer = ResNet56(X)
+    output_layer = ResNet(X)
     output_train = lasagne.layers.get_output(output_layer)
     output_test = lasagne.layers.get_output(output_layer, deterministic=True)
 
@@ -88,7 +87,7 @@ for ensb in range(15):
     valid_acc = []
     best_acc = 0.0
     try:
-        for i in range(60):
+        for i in range(75):
             # change learning rate according to schedules
             if i in LR_SCHEDULE:
                 l_r.set_value(LR_SCHEDULE[i])
@@ -118,7 +117,7 @@ for ensb in range(15):
 
     # save weights
     #all_params = helper.get_all_param_values(output_layer)
-    f = gzip.open('data/weights/weights_resnet56_32ch' + str(nn_count) + '.pklz', 'wb')
+    f = gzip.open('data/weights/weights_resnet56_16ch_' + str(nn_count) + '.pklz', 'wb')
     pickle.dump(best_params, f)
     f.close()
 

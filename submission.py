@@ -16,8 +16,8 @@ from lasagne.layers import helper
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.manifold import TSNE
 
-from models import vgg16, ResNet34
-from utils import load_test, batch_iterator_train, batch_iterator_valid, iterate_minibatches
+from models import vgg16, ResNet
+from utils import load_test, batch_iterator_train, batch_iterator_valid
 
 from matplotlib import pyplot
 
@@ -31,7 +31,7 @@ X = T.tensor4('X')
 Y = T.ivector('y')
 
 # set up theano functions to generate output by feeding data through network, any test outputs should be deterministic
-output_layer = ResNet34(X)
+output_layer = ResNet(X)
 output_test = lasagne.layers.get_output(output_layer, deterministic=True)
 
 # set up training and prediction functions
@@ -46,12 +46,12 @@ X_test, X_test_id = load_test(cache=True)
 nn_count = 1
 for ensb in range(15):
     # load network weights
-    f = gzip.open('data/weights/weights_resnet56_32ch' + str(nn_count) + '.pklz', 'rb')
+    f = gzip.open('data/weights/weights_resnet56_16ch_' + str(nn_count) + '.pklz', 'rb')
     all_params = pickle.load(f)
     f.close()
     helper.set_all_param_values(output_layer, all_params)
 
-    #make predictions
+    # make regular predictions
     predictions = []
     for j in range((X_test.shape[0] + BATCHSIZE - 1) // BATCHSIZE):
         sl = slice(j * BATCHSIZE, (j + 1) * BATCHSIZE)
@@ -59,7 +59,7 @@ for ensb in range(15):
         predictions.extend(predict_proba(X_batch))
 
     predictions = np.array(predictions)
-    print predictions.shape
+    print('Prediction ' + str(nn_count) + ' done ')
 
     '''
     make submission file
@@ -71,7 +71,7 @@ for ensb in range(15):
         if not os.path.isdir('subm'):
             os.mkdir('subm')
         suffix = str(now.strftime("%Y-%m-%d-%H-%M"))
-        sub_file = os.path.join('subm', 'submission_resnet' + str(nn_count) + '.csv')
+        sub_file = os.path.join('subm', 'submission_resnet56_16ch_' + str(nn_count) + '.csv')
         result1.to_csv(sub_file, index=False)
 
     create_submission(predictions, X_test_id)

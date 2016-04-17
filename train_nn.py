@@ -12,7 +12,7 @@ from lasagne.layers import helper
 
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 
-from models import vgg16, ResNet56
+from models import vgg16, ResNet, ResNet_test
 from utils import load_train_cv, batch_iterator_train, batch_iterator_valid
 
 from matplotlib import pyplot
@@ -36,7 +36,7 @@ X = T.tensor4('X')
 Y = T.ivector('y')
 
 # set up theano functions to generate output by feeding data through network, any test outputs should be deterministic
-output_layer = ResNet56(X)
+output_layer = ResNet_test(X)
 output_train = lasagne.layers.get_output(output_layer)
 output_test = lasagne.layers.get_output(output_layer, deterministic=True)
 
@@ -78,9 +78,8 @@ print np.amax(train_X)
 
 # loop over training functions for however many iterations, print information while training
 train_eval = []
-train_err = []
 valid_eval = []
-valid_err = []
+valid_acc = []
 best_acc = 0.0
 try:
     for epoch in range(ITERS):
@@ -90,11 +89,12 @@ try:
         # do the training
         start = time.time()
 
-        train_loss, acc_t = batch_iterator_train(train_X, train_y, BATCHSIZE, train_fn)
-        train_err.append((1.0 - acc_t))
+        train_loss = batch_iterator_train(train_X, train_y, BATCHSIZE, train_fn)
+        train_eval.append(train_loss)
 
         valid_loss, acc_v = batch_iterator_valid(test_X, test_y, valid_fn)
-        valid_err.append((1.0 - acc_v))
+        valid_eval.append(valid_loss)
+        valid_acc.append((1.0 - acc_v))
 
         ratio = train_loss / valid_loss
         end = time.time() - start
@@ -117,11 +117,19 @@ pickle.dump(best_params, f)
 f.close()
 
 # plot loss and accuracy
-train_err = np.array(train_err)
-valid_err = np.array(valid_err)
-pyplot.plot(train_err, label='train classification error', color='#707070')
-pyplot.plot(valid_err, label='valid classification error', color='#3B91CF')
-pyplot.legend(loc = 2)
-pyplot.savefig('plots/training_ResNet56_l2_flipud_32ch.png')
+train_eval = np.array(train_eval)
+valid_eval = np.array(valid_eval)
+valid_acc = np.array(valid_acc)
+pyplot.plot(train_eval, label='Train loss', color='#707070')
+pyplot.plot(valid_err, label='Valid loss', color='#3B91CF')
+pyplot.ylabel('Categorical Cross Entropy Loss')
+pyplot.legend(loc=2)
+pyplot.twinx()
+ax.yaxis.set_label_position("right")
+pyplot.ylabel('Valid Error (%)')
+pyplot.plot(valid_acc, label='Valid classification error', color='#ED5724')
+pyplot.xlabel('Epoch')
+pyplot.legend(loc=3)
+pyplot.savefig('plots/training_ResNet56_l2_16ch.png')
 pyplot.clf()
 #pyplot.show()

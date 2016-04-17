@@ -2,7 +2,7 @@ import sys
 sys.setrecursionlimit(10000)
 import lasagne
 from lasagne.nonlinearities import rectify, softmax, sigmoid
-from lasagne.layers import InputLayer, MaxPool2DLayer, DenseLayer, DropoutLayer, helper, batch_norm
+from lasagne.layers import InputLayer, MaxPool2DLayer, DenseLayer, DropoutLayer, helper, batch_norm, BatchNormLayer
 # for ResNet
 from lasagne.layers import Conv2DLayer as ConvLayer
 from lasagne.layers import Pool2DLayer, ElemwiseSumLayer, NonlinearityLayer, PadLayer, GlobalPoolLayer, ExpressionLayer
@@ -127,6 +127,78 @@ def ResNet(input_var=None, n=9):
                 block = NonlinearityLayer(ElemwiseSumLayer([stack_2, padding]),nonlinearity=rectify)
         else:
             block = NonlinearityLayer(ElemwiseSumLayer([stack_2, l]),nonlinearity=rectify)
+
+        return block
+
+    # Building the network
+    l_in = InputLayer(shape=(None, 3, PIXELS, PIXELS), input_var=input_var)
+
+    # first layer, output is 64 x 32 x 32
+    l = batch_norm(Conv2DDNNLayer(l_in, num_filters=16, filter_size=(3,3), stride=(1,1), nonlinearity=rectify, pad='same', W=lasagne.init.HeNormal(gain='relu')))
+
+    # first stack of residual blocks, output is 32 x 32 x 32
+    for _ in range(n):
+        l = residual_block(l)
+
+    # second stack of residual blocks, output is 64 x 16 x 16
+    l = residual_block(l, increase_dim=True)
+    for _ in range(1,n):
+        l = residual_block(l)
+
+    # third stack of residual blocks, output is 128 x 8 x 8
+    l = residual_block(l, increase_dim=True)
+    for _ in range(1,n):
+        l = residual_block(l)
+
+    # average pooling
+    l = GlobalPoolLayer(l)
+
+    # fully connected layer
+    network = DenseLayer(
+            l, num_units=10,
+            W=lasagne.init.HeNormal(),
+            nonlinearity=softmax)
+
+    return network
+
+def ResNet_test(input_var=None, n=9):
+    '''
+    Adapted from https://github.com/Lasagne/Recipes/tree/master/papers/deep_residual_learning.
+    Tweaked to be consistent with 'Identity Mappings in Deep Residual Networks', Kaiming He et al. 2016 (https://arxiv.org/abs/1603.05027)
+    '''
+    # create a residual learning building block with two stacked 3x3 convlayers as in paper
+    def residual_block(l, increase_dim=False, projection=True):
+        input_num_filters = l.output_shape[1]
+        if increase_dim:
+            first_stride = (2,2)
+            out_num_filters = input_num_filters*2
+        else:
+            first_stride = (1,1)
+            out_num_filters = input_num_filters
+
+        # contains the BN -> ReLU portion, steps 1 to 2
+        bn_stack_1 = BatchNormLayer(l)
+        bn_relu = rectify(bn_stack_1)
+
+        # contains the weight -> BN -> ReLU portion, steps 3 to 5
+        conv_1 = batch_norm(Conv2DDNNLayer(bn_relu, num_filters=out_num_filters, filter_size=(3,3), stride=first_stride, nonlinearity=rectify, pad='same', W=lasagne.init.HeNormal(gain='relu')))
+
+        # contains the last weight portion, step 6
+        conv_2 = Conv2DDNNLayer(conv_1, num_filters=out_num_filters, filter_size=(3,3), stride=(1,1), nonlinearity=None, pad='same', W=lasagne.init.HeNormal(gain='relu'))
+
+        # add shortcut connections
+        if increase_dim:
+            if projection:
+                # projection shortcut, as option B in paper
+                projection = batch_norm(Conv2DDNNLayer(l, num_filters=out_num_filters, filter_size=(1,1), stride=(2,2), nonlinearity=None, pad='same', b=None))
+                block = NonlinearityLayer(ElemwiseSumLayer([conv_2, projection]),nonlinearity=rectify)
+            else:
+                # identity shortcut, as option A in paper
+                identity = ExpressionLayer(l, lambda X: X[:, :, ::2, ::2], lambda s: (s[0], s[1], s[2]//2, s[3]//2))
+                padding = PadLayer(identity, [out_num_filters//4,0,0], batch_ndim=1)
+                block = NonlinearityLayer(ElemwiseSumLayer([conv_2, padding]),nonlinearity=rectify)
+        else:
+            block = NonlinearityLayer(ElemwiseSumLayer([conv_2, l]),nonlinearity=rectify)
 
         return block
 

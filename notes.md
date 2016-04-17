@@ -8,7 +8,7 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * Initial filter num - 16
 * L2 regularization - 0.0001 (same as paper)
 * Option B (Projection shortcuts)
-* trained with ADAM for 60 epoch- lr_schedule = {0:0.001, 30:0.0001, 65:0.00001}
+* trained with ADAM for 75 epoch- lr_schedule = {0:0.001, 30:0.0001, 65:0.00001}
 * Individual models get 99.5-99.9% (random 10% valid on each training net)
 * Single model submission score - 0.71352
 * Ensemble submission score - 0.30114

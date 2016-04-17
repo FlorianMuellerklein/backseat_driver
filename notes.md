@@ -8,7 +8,7 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * Initial filter num - 16
 * L2 regularization - 0.0001 (same as paper)
 * Option B (Projection shortcuts)
-* trained with ADAM for 75 epoch- lr_schedule = {0:0.001, 30:0.0001, 65:0.00001}
+* Trained with ADAM for 75 epoch- lr_schedule = {0:0.001, 30:0.0001, 65:0.00001}
 * Individual models get 99.5-99.9% (random 10% valid on each training net)
 * Single model submission score - 0.71352
 * Ensemble submission score - 0.30114
@@ -20,7 +20,7 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * Initial filter num - 16
 * No L2 regularization
 * Option A (Identity shortcuts)
-* trained with ADAM for 60 epoch- lr_schedule = {0:0.003, 15:0.0003, 35:0.00003, 50:0.00001}
+* Trained with ADAM for 60 epoch- lr_schedule = {0:0.003, 15:0.0003, 35:0.00003, 50:0.00001}
 * Individual models get 99.5-99.9%
 * Single model submission score - 1.03804
 * Ensemble submission score - 0.38794
@@ -105,6 +105,7 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * Train ResNet56 with 64 channel for longer than 80 epoch, score dropped from 60 to 80, maybe try 120
 * Train any models for longer than 60 to see if the scores become more stable.
 * Train models without lr_decay and look at plots to get an idea about the best decay points. (ResNets use decay points from VGG training, might not be optimal)
+* VGG with L2 regularization
 
 ## Things that didn't really work out
 

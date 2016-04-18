@@ -18,13 +18,12 @@ from utils import load_train_cv, batch_iterator_train, batch_iterator_valid
 from matplotlib import pyplot
 
 # training params
-ITERS = 80
+ITERS = 75
 BATCHSIZE = 32
 LR_SCHEDULE = {
     0: 0.001,
-    25: 0.0001,
-    50: 0.00001,
-    65: 0.000001
+    30: 0.0001,
+    65: 0.00001
 }
 
 encoder = LabelEncoder()
@@ -62,7 +61,7 @@ params = lasagne.layers.get_all_params(output_layer, trainable=True)
 updates = adam(loss, params, learning_rate=l_r)
 
 # set up training and prediction functions
-train_fn = theano.function(inputs=[X,Y], outputs=[loss, test_acc], updates=updates)
+train_fn = theano.function(inputs=[X,Y], outputs=loss, updates=updates)
 valid_fn = theano.function(inputs=[X,Y], outputs=[test_loss, test_acc])
 
 '''
@@ -89,7 +88,7 @@ try:
         # do the training
         start = time.time()
 
-        train_loss = batch_iterator_train(train_X, train_y, BATCHSIZE, train_fn)
+        train_loss = batch_iterator_train(train_X, train_y, BATCHSIZE, train_fn, leftright=True)
         train_eval.append(train_loss)
 
         valid_loss, acc_v = batch_iterator_valid(test_X, test_y, valid_fn)
@@ -121,15 +120,15 @@ train_eval = np.array(train_eval)
 valid_eval = np.array(valid_eval)
 valid_acc = np.array(valid_acc)
 pyplot.plot(train_eval, label='Train loss', color='#707070')
-pyplot.plot(valid_err, label='Valid loss', color='#3B91CF')
+pyplot.plot(valid_eval, label='Valid loss', color='#3B91CF')
 pyplot.ylabel('Categorical Cross Entropy Loss')
+pyplot.xlabel('Epoch')
 pyplot.legend(loc=2)
 pyplot.twinx()
-ax.yaxis.set_label_position("right")
 pyplot.ylabel('Valid Error (%)')
-pyplot.plot(valid_acc, label='Valid classification error', color='#ED5724')
-pyplot.xlabel('Epoch')
-pyplot.legend(loc=3)
-pyplot.savefig('plots/training_ResNet56_l2_16ch.png')
+pyplot.grid()
+pyplot.plot(valid_acc, label='Valid classification error (%)', color='#ED5724')
+pyplot.legend(loc=1)
+pyplot.savefig('plots/training_ResNet56_l2_16ch_noLRdecay.png')
 pyplot.clf()
 #pyplot.show()

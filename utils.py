@@ -107,7 +107,7 @@ def plot_sample(img):
 def fast_warp(img, tf, output_shape, mode='nearest'):
     return transform._warps_cy._warp_fast(img, tf.params, output_shape=output_shape, mode=mode)
 
-def batch_iterator_train(data, y, batchsize, train_fn):
+def batch_iterator_train(data, y, batchsize, train_fn, leftright=True):
     '''
     Data augmentation batch iterator for feeding images into CNN.
     This example will randomly rotate all images in a given batch between -30 and 30 degrees
@@ -139,7 +139,10 @@ def batch_iterator_train(data, y, batchsize, train_fn):
         shear_deg = random.uniform(-5,5)
 
         # random clips bool
-        flip_lr = random.randint(0,1)
+        if leftright:
+            flip_lr = random.randint(0,1)
+        else:
+            flip_lr = 0
         #flip_ud = random.randint(0,1)
 
         # set the transform parameters for skimage.transform.warp
@@ -193,7 +196,7 @@ def batch_iterator_train(data, y, batchsize, train_fn):
         #plot_sample(X_batch_aug[0] / img_max)
 
         # fit model on each batch
-        loss = train_fn(X_batch_aug, y_batch)
+        loss.append(train_fn(X_batch_aug, y_batch))
 
     return np.mean(loss)
 

@@ -200,16 +200,15 @@ def batch_iterator_train(data, y, batchsize, train_fn, leftright=True):
 
     return np.mean(loss)
 
-def batch_iterator_valid(data_test, y_test, valid_fn):
+def batch_iterator_valid(data_test, y_test, batchsize, valid_fn):
     '''
     Batch iterator for fine tuning network, no augmentation.
     '''
-
     n_samples_valid = data_test.shape[0]
     loss_valid = []
     acc_valid = 0.
-    for i in range((n_samples_valid + 1 - 1) // 1):
-        sl = slice(i * 1, (i + 1) * 1)
+    for i in range((n_samples_valid + batchsize - 1) // batchsize):
+        sl = slice(i * batchsize, (i + 1) * batchsize)
         X_batch_test = data_test[sl]
         y_batch_test = y_test[sl]
 

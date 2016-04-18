@@ -91,7 +91,7 @@ try:
         train_loss = batch_iterator_train(train_X, train_y, BATCHSIZE, train_fn, leftright=True)
         train_eval.append(train_loss)
 
-        valid_loss, acc_v = batch_iterator_valid(test_X, test_y, valid_fn)
+        valid_loss, acc_v = batch_iterator_valid(test_X, test_y, BATCHSIZE, valid_fn)
         valid_eval.append(valid_loss)
         valid_acc.append((1.0 - acc_v))
 

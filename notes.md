@@ -37,12 +37,23 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 
 ### ResNet110
 * Initial filter num - 16
+* FullPreActivation
 * Batch size - 32
 * L2 regularization - 0.0001 (same as paper)
 * ADAM for 75 epoch - lr_schedule = {0:0.001, 30:0.0001, 65:0.00001}
 * Projection option
 * Individual accuracy - 99.7%
 * Submission score - 0.60583
+
+### ResNet110 - Relabeled Training
+* Initial filter num - 16
+* FullPreActivation
+* Batch size - 32
+* L2 regularization - 0.0001 (same as paper)
+* ADAM for 75 epoch - lr_schedule = {0:0.001, 30:0.0001, 65:0.00001}
+* Projection option
+* Individual accuracy - 99.7%
+* Submission score - 0.63784
 
 ### ResNet56
 * Initial filter num - 32
@@ -102,7 +113,7 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 
 ## Things currently trying
 
-* New Residual block from the current paper (FullPreActivation)
+* Relabel training examples with ResNet110 then retrain network with new labels
 * Try to find optimal number of epoch and lr_schedule
 
 ## To try later

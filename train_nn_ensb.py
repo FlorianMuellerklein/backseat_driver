@@ -13,16 +13,17 @@ from lasagne.layers import helper
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.manifold import TSNE
 
-from models import vgg16, ResNet
+from models import vgg16, ResNet_Orig, ResNet_FullPreActivation
 from utils import load_train_cv, batch_iterator_train, batch_iterator_valid
 
 from matplotlib import pyplot
 
 # training params
+ITERS = 75
 BATCHSIZE = 32
 LR_SCHEDULE = {
     0: 0.001,
-    30: 0.0001,
+    35: 0.0001,
     65: 0.00001
 }
 
@@ -40,7 +41,7 @@ for ensb in range(15):
     Y = T.ivector('y')
 
     # set up theano functions to generate output by feeding data through network, any test outputs should be deterministic
-    output_layer = ResNet(X)
+    output_layer = ResNet_Orig(X)
     output_train = lasagne.layers.get_output(output_layer)
     output_test = lasagne.layers.get_output(output_layer, deterministic=True)
 
@@ -76,7 +77,7 @@ for ensb in range(15):
     '''
 
     # load the training and validation data sets
-    train_X, train_y, test_X, test_y, encoder = load_train_cv(encoder, cache=True)
+    train_X, train_y, test_X, test_y, encoder = load_train_cv(encoder, cache=True, relabel=False)
     print 'Train shape:', train_X.shape, 'Test shape:', test_X.shape
     print 'Train y shape:', train_y.shape, 'Test y shape:', test_y.shape
     print np.amax(train_X)
@@ -87,9 +88,9 @@ for ensb in range(15):
     valid_acc = []
     best_acc = 0.0
     try:
-        for i in range(75):
+        for epoch in range(ITERS):
             # change learning rate according to schedules
-            if i in LR_SCHEDULE:
+            if epoch in LR_SCHEDULE:
                 l_r.set_value(LR_SCHEDULE[i])
             # do the training
             start = time.time()
@@ -104,7 +105,7 @@ for ensb in range(15):
             ratio = train_loss / valid_loss
             end = time.time() - start
             # print training details
-            print 'iter:', i, '| TL:', np.round(train_loss,decimals=3), '| VL:', np.round(valid_loss, decimals=3), '| Vacc:', np.round(acc_v, decimals=3), '| Ratio:', np.round(ratio, decimals=2), '| Time:', np.round(end, decimals=1)
+            print 'iter:', epoch, '| TL:', np.round(train_loss,decimals=3), '| VL:', np.round(valid_loss, decimals=3), '| Vacc:', np.round(acc_v, decimals=3), '| Ratio:', np.round(ratio, decimals=2), '| Time:', np.round(end, decimals=1)
 
             if acc_v > best_acc:
                 best_acc = acc_v
@@ -117,7 +118,7 @@ for ensb in range(15):
 
     # save weights
     #all_params = helper.get_all_param_values(output_layer)
-    f = gzip.open('data/weights/weights_resnet56_16ch_' + str(nn_count) + '.pklz', 'wb')
+    f = gzip.open('data/weights/weights_resnet110_16ch_' + str(nn_count) + '.pklz', 'wb')
     pickle.dump(best_params, f)
     f.close()
 

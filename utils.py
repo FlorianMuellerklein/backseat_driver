@@ -23,10 +23,13 @@ num_features = imageSize * 3
 
 tsne = TSNE(verbose=1)
 
-def load_train_cv(encoder, cache=False):
+def load_train_cv(encoder, cache=False, relabel=False):
     if cache:
         X_train = np.load('data/cache/X_train_small.npy')
-        y_train = np.load('data/cache/y_train_small.npy')
+        if relabel:
+            y_train = np.load('data/cache/y_train_small_relabel.npy')
+        else:
+            y_train = np.load('data/cache/y_train_small.npy')
     else:
         X_train = []
         y_train = []
@@ -206,7 +209,7 @@ def batch_iterator_valid(data_test, y_test, batchsize, valid_fn):
     '''
     n_samples_valid = data_test.shape[0]
     loss_valid = []
-    acc_valid = 0.
+    acc_valid = []
     for i in range((n_samples_valid + batchsize - 1) // batchsize):
         sl = slice(i * batchsize, (i + 1) * batchsize)
         X_batch_test = data_test[sl]
@@ -214,9 +217,9 @@ def batch_iterator_valid(data_test, y_test, batchsize, valid_fn):
 
         loss_vv, acc_vv = valid_fn(X_batch_test, y_batch_test)
         loss_valid.append(loss_vv)
-        acc_valid += acc_vv
+        acc_valid.append(acc_vv)
 
     # print statements for debugging, check if test images look like train images
     #plot_sample((X_batch_test[0] / np.amax(X_batch_test)))
 
-    return np.mean(loss_valid), acc_valid / n_samples_valid
+    return np.mean(loss_valid), np.mean(acc_valid)

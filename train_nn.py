@@ -22,8 +22,8 @@ ITERS = 75
 BATCHSIZE = 32
 LR_SCHEDULE = {
     0: 0.001,
-    30: 0.0001,
-    65: 0.00001
+    35: 0.0001,
+    60: 0.00001
 }
 
 encoder = LabelEncoder()
@@ -70,7 +70,7 @@ load training data and start training
 encoder = LabelEncoder()
 
 # load the training and validation data sets
-train_X, train_y, test_X, test_y, encoder = load_train_cv(encoder, cache=True)
+train_X, train_y, test_X, test_y, encoder = load_train_cv(encoder, cache=True, relabel=True)
 print 'Train shape:', train_X.shape, 'Test shape:', test_X.shape
 print 'Train y shape:', train_y.shape, 'Test y shape:', test_y.shape
 print np.amax(train_X)
@@ -88,15 +88,12 @@ try:
         # do the training
         start = time.time()
 
-        if epoch < 65:
-            train_loss = batch_iterator_train(train_X, train_y, BATCHSIZE, train_fn, leftright=True)
-        else:
-            train_loss = batch_iterator_train(train_X, train_y, BATCHSIZE, train_fn, leftright=False)
+        train_loss = batch_iterator_train(train_X, train_y, BATCHSIZE, train_fn, leftright=True)
         train_eval.append(train_loss)
 
         valid_loss, acc_v = batch_iterator_valid(test_X, test_y, BATCHSIZE, valid_fn)
         valid_eval.append(valid_loss)
-        valid_acc.append((1.0 - acc_v))
+        valid_acc.append(acc_v)
 
         ratio = train_loss / valid_loss
         end = time.time() - start
@@ -114,7 +111,7 @@ print "Final Acc:", best_acc
 
 # save weights
 all_params = helper.get_all_param_values(output_layer)
-f = gzip.open('data/weights/weights_resnet56_32ch.pklz', 'wb')
+f = gzip.open('data/weights/weights_resnet110_16ch_relabel.pklz', 'wb')
 pickle.dump(best_params, f)
 f.close()
 
@@ -129,10 +126,10 @@ pyplot.xlabel('Epoch')
 pyplot.legend(loc=2)
 pyplot.ylim([0,1.5])
 pyplot.twinx()
-pyplot.ylabel('Valid Error (%)')
+pyplot.ylabel('Valid Acc (%)')
 pyplot.grid()
-pyplot.plot(valid_acc, label='Valid classification error (%)', color='#ED5724')
+pyplot.plot(valid_acc, label='Valid classification accuracy (%)', color='#ED5724')
 pyplot.legend(loc=1)
-pyplot.savefig('plots/ResNet110_L2_16ch_fliplroff65.png')
+pyplot.savefig('plots/ResNet110_L2_16ch_relabel.png')
 pyplot.clf()
 #pyplot.show()

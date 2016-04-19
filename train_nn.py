@@ -12,7 +12,7 @@ from lasagne.layers import helper
 
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 
-from models import vgg16, ResNet, ResNet_test
+from models import vgg16, ResNet_Orig, ResNet_FullPreActivation
 from utils import load_train_cv, batch_iterator_train, batch_iterator_valid
 
 from matplotlib import pyplot
@@ -35,7 +35,7 @@ X = T.tensor4('X')
 Y = T.ivector('y')
 
 # set up theano functions to generate output by feeding data through network, any test outputs should be deterministic
-output_layer = ResNet_test(X)
+output_layer = ResNet_FullPreActivation(X)
 output_train = lasagne.layers.get_output(output_layer)
 output_test = lasagne.layers.get_output(output_layer, deterministic=True)
 
@@ -88,7 +88,10 @@ try:
         # do the training
         start = time.time()
 
-        train_loss = batch_iterator_train(train_X, train_y, BATCHSIZE, train_fn, leftright=True)
+        if epoch < 65:
+            train_loss = batch_iterator_train(train_X, train_y, BATCHSIZE, train_fn, leftright=True)
+        else:
+            train_loss = batch_iterator_train(train_X, train_y, BATCHSIZE, train_fn, leftright=False)
         train_eval.append(train_loss)
 
         valid_loss, acc_v = batch_iterator_valid(test_X, test_y, BATCHSIZE, valid_fn)
@@ -124,11 +127,12 @@ pyplot.plot(valid_eval, label='Valid loss', color='#3B91CF')
 pyplot.ylabel('Categorical Cross Entropy Loss')
 pyplot.xlabel('Epoch')
 pyplot.legend(loc=2)
+pyplot.ylim([0,1.5])
 pyplot.twinx()
 pyplot.ylabel('Valid Error (%)')
 pyplot.grid()
 pyplot.plot(valid_acc, label='Valid classification error (%)', color='#ED5724')
 pyplot.legend(loc=1)
-pyplot.savefig('plots/training_ResNet56_l2_16ch_noLRdecay.png')
+pyplot.savefig('plots/ResNet110_L2_16ch_fliplroff65.png')
 pyplot.clf()
 #pyplot.show()

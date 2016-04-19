@@ -8,11 +8,11 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * Initial filter num - 16
 * L2 regularization - 0.0001 (same as paper)
 * Option B (Projection shortcuts)
+* Batch size - 32
 * Trained with ADAM for 75 epoch- lr_schedule = {0:0.001, 30:0.0001, 65:0.00001}
 * Individual models get 99.5-99.9% (random 10% valid on each training net)
 * Single model submission score - 0.71352
 * Ensemble submission score - 0.30114
-* Batch size - 32
 
 ## Past solution
 
@@ -34,6 +34,15 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * RGB intensity - (-25,25)
 
 ## Things that have worked well
+
+### ResNet110
+* Initial filter num - 16
+* Batch size - 32
+* L2 regularization - 0.0001 (same as paper)
+* ADAM for 75 epoch - lr_schedule = {0:0.001, 30:0.0001, 65:0.00001}
+* Projection option
+* Individual accuracy - 99.7%
+* Submission score - 0.60583
 
 ### ResNet56
 * Initial filter num - 32
@@ -93,7 +102,7 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 
 ## Things currently trying
 
-* New Residual block from the current paper
+* New Residual block from the current paper (FullPreActivation)
 * Try to find optimal number of epoch and lr_schedule
 
 ## To try later

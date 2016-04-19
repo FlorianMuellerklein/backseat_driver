@@ -99,7 +99,7 @@ def vgg16_fc7(input_var=None):
 
     return l_out, l_hidden2
 
-def ResNet(input_var=None, n=9):
+def ResNet_Orig(input_var=None, n=9):
     # create a residual learning building block with two stacked 3x3 convlayers as in paper
     def residual_block(l, increase_dim=False, projection=True):
         input_num_filters = l.output_shape[1]
@@ -161,7 +161,7 @@ def ResNet(input_var=None, n=9):
 
     return network
 
-def ResNet_test(input_var=None, n=9):
+def ResNet_FullPreActivation(input_var=None, n=18):
     '''
     Adapted from https://github.com/Lasagne/Recipes/tree/master/papers/deep_residual_learning.
     Tweaked to be consistent with 'Identity Mappings in Deep Residual Networks', Kaiming He et al. 2016 (https://arxiv.org/abs/1603.05027)
@@ -177,11 +177,11 @@ def ResNet_test(input_var=None, n=9):
             out_num_filters = input_num_filters
 
         # contains the BN -> ReLU portion, steps 1 to 2
-        bn_stack_1 = BatchNormLayer(l)
-        bn_relu = rectify(bn_stack_1)
+        bn_pre_conv = BatchNormLayer(l)
+        bn_relu = NonlinearityLayer(bn_pre_conv, rectify)
 
         # contains the weight -> BN -> ReLU portion, steps 3 to 5
-        conv_1 = batch_norm(Conv2DDNNLayer(bn_relu, num_filters=out_num_filters, filter_size=(3,3), stride=first_stride, nonlinearity=rectify, pad='same', W=lasagne.init.HeNormal(gain='relu')))
+        conv_1 = batch_norm(Conv2DDNNLayer(bn_pre_conv, num_filters=out_num_filters, filter_size=(3,3), stride=first_stride, nonlinearity=rectify, pad='same', W=lasagne.init.HeNormal(gain='relu')))
 
         # contains the last weight portion, step 6
         conv_2 = Conv2DDNNLayer(conv_1, num_filters=out_num_filters, filter_size=(3,3), stride=(1,1), nonlinearity=None, pad='same', W=lasagne.init.HeNormal(gain='relu'))

@@ -12,18 +12,18 @@ from lasagne.layers import helper
 
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 
-from models import vgg16, ResNet_Orig, ResNet_FullPreActivation
+from models import vgg16, ResNet_Orig, ResNet_FullPreActivation, ResNet_BottleNeck_FullPreActivation
 from utils import load_train_cv, batch_iterator_train, batch_iterator_valid
 
 from matplotlib import pyplot
 
 # training params
-ITERS = 75
+ITERS = 100
 BATCHSIZE = 32
 LR_SCHEDULE = {
     0: 0.001,
-    35: 0.0001,
-    60: 0.00001
+    45: 0.0001,
+    85: 0.00001
 }
 
 encoder = LabelEncoder()
@@ -35,7 +35,9 @@ X = T.tensor4('X')
 Y = T.ivector('y')
 
 # set up theano functions to generate output by feeding data through network, any test outputs should be deterministic
-output_layer = ResNet_FullPreActivation(X)
+# load model
+output_layer = ResNet_BottleNeck_FullPreActivation(X)
+# create outputs
 output_train = lasagne.layers.get_output(output_layer)
 output_test = lasagne.layers.get_output(output_layer, deterministic=True)
 
@@ -70,7 +72,7 @@ load training data and start training
 encoder = LabelEncoder()
 
 # load the training and validation data sets
-train_X, train_y, test_X, test_y, encoder = load_train_cv(encoder, cache=True, relabel=True)
+train_X, train_y, test_X, test_y, encoder = load_train_cv(encoder, cache=True, relabel=False)
 print 'Train shape:', train_X.shape, 'Test shape:', test_X.shape
 print 'Train y shape:', train_y.shape, 'Test y shape:', test_y.shape
 print np.amax(train_X)
@@ -111,7 +113,7 @@ print "Final Acc:", best_acc
 
 # save weights
 all_params = helper.get_all_param_values(output_layer)
-f = gzip.open('data/weights/weights_resnet110_16ch_relabel.pklz', 'wb')
+f = gzip.open('data/weights/resnet164_bottleneck_fullpreactivation.pklz', 'wb')
 pickle.dump(best_params, f)
 f.close()
 
@@ -130,6 +132,6 @@ pyplot.ylabel('Valid Acc (%)')
 pyplot.grid()
 pyplot.plot(valid_acc, label='Valid classification accuracy (%)', color='#ED5724')
 pyplot.legend(loc=1)
-pyplot.savefig('plots/ResNet110_L2_16ch_relabel.png')
+pyplot.savefig('plots/resnet164_bottleneck_fullpreactivation_L2.png')
 pyplot.clf()
 #pyplot.show()

@@ -248,7 +248,7 @@ def ResNet_BottleNeck_FullPreActivation(input_var=None, n=18):
     Forumala to figure out depth: 9n + 2
     '''
     # create a residual learning building block with two stacked 3x3 convlayers as in paper
-    def residual_bottleneck_block(l, increase_dim=False, first=False):
+    def residual_bottleneck_block(l, increase_dim=False):
         input_num_filters = l.output_shape[1]
         if increase_dim:
             first_stride = (2,2)
@@ -257,13 +257,9 @@ def ResNet_BottleNeck_FullPreActivation(input_var=None, n=18):
             first_stride = (1,1)
             out_num_filters = input_num_filters
 
-        if not first:
-            # contains the BN -> ReLU portion, steps 1 to 2
-            bn_pre_conv = BatchNormLayer(l)
-            bn_pre_relu = NonlinearityLayer(bn_pre_conv, rectify)
-        else:
-            # kind of hacky fix to keep layers names straight
-            bn_pre_relu = l
+        # contains the BN -> ReLU portion, steps 1 to 2
+        bn_pre_conv = BatchNormLayer(l)
+        bn_pre_relu = NonlinearityLayer(bn_pre_conv, rectify)
 
         # contains the weight -> BN -> ReLU portion, steps 3 to 5
         conv_1 = batch_norm(ConvLayer(bn_pre_relu, num_filters=out_num_filters, filter_size=(1,1), stride=first_stride, nonlinearity=rectify, pad='same', W=he_norm))
@@ -286,11 +282,11 @@ def ResNet_BottleNeck_FullPreActivation(input_var=None, n=18):
     l_in = InputLayer(shape=(None, 3, PIXELS, PIXELS), input_var=input_var)
 
     # first layer, output is 16 x 32 x 32
-    l = batch_norm(ConvLayer(l_in, num_filters=16, filter_size=(3,3), stride=(1,1), nonlinearity=rectify, pad='same', W=he_norm))
+    l = ConvLayer(l_in, num_filters=16, filter_size=(3,3), stride=(1,1), nonlinearity=None, pad='same', W=he_norm)
 
     # first stack of residual blocks, output is 32 x 32 x 32
     for _ in range(n):
-        l = residual_bottleneck_block(l, first=True)
+        l = residual_bottleneck_block(l)
 
     # second stack of residual blocks, output is 64 x 16 x 16
     l = residual_bottleneck_block(l, increase_dim=True)

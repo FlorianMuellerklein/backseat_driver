@@ -13,17 +13,19 @@ from lasagne.layers import helper
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 
 from models import vgg16, ResNet_Orig, ResNet_FullPreActivation, ResNet_BottleNeck_FullPreActivation
-from utils import load_train_cv, batch_iterator_train, batch_iterator_valid
+from utils import load_train_cv, batch_iterator_train, batch_iterator_valid, batch_iterator_train_crop_flip_color
 
 from matplotlib import pyplot
+import warnings
+warnings.filterwarnings("ignore")
 
 # training params
-ITERS = 100
+ITERS = 200
 BATCHSIZE = 32
 LR_SCHEDULE = {
-    0: 0.001,
-    45: 0.0001,
-    85: 0.00001
+    0: 0.01,
+    80: 0.001,
+    120: 0.0001
 }
 
 encoder = LabelEncoder()
@@ -36,7 +38,7 @@ Y = T.ivector('y')
 
 # set up theano functions to generate output by feeding data through network, any test outputs should be deterministic
 # load model
-output_layer = ResNet_BottleNeck_FullPreActivation(X)
+output_layer = ResNet_FullPreActivation(X)
 # create outputs
 output_train = lasagne.layers.get_output(output_layer)
 output_test = lasagne.layers.get_output(output_layer, deterministic=True)
@@ -59,8 +61,8 @@ test_acc = T.mean(T.eq(T.argmax(output_test, axis=1), Y), dtype=theano.config.fl
 # get parameters from network and set up sgd with nesterov momentum to update parameters, l_r is shared var so it can be changed
 l_r = theano.shared(np.array(LR_SCHEDULE[0], dtype=theano.config.floatX))
 params = lasagne.layers.get_all_params(output_layer, trainable=True)
-#updates = nesterov_momentum(loss, params, learning_rate=l_r, momentum=0.9)
-updates = adam(loss, params, learning_rate=l_r)
+updates = nesterov_momentum(loss, params, learning_rate=l_r, momentum=0.9)
+#updates = adam(loss, params, learning_rate=l_r)
 
 # set up training and prediction functions
 train_fn = theano.function(inputs=[X,Y], outputs=loss, updates=updates)
@@ -90,7 +92,7 @@ try:
         # do the training
         start = time.time()
 
-        train_loss = batch_iterator_train(train_X, train_y, BATCHSIZE, train_fn, leftright=True)
+        train_loss = batch_iterator_train(train_X, train_y, BATCHSIZE, train_fn)
         train_eval.append(train_loss)
 
         valid_loss, acc_v = batch_iterator_valid(test_X, test_y, BATCHSIZE, valid_fn)
@@ -113,7 +115,7 @@ print "Final Acc:", best_acc
 
 # save weights
 all_params = helper.get_all_param_values(output_layer)
-f = gzip.open('data/weights/resnet164_bottleneck_fullpreactivation.pklz', 'wb')
+f = gzip.open('data/weights/resnet110_fullpreactivation_sgd.pklz', 'wb')
 pickle.dump(best_params, f)
 f.close()
 
@@ -132,6 +134,6 @@ pyplot.ylabel('Valid Acc (%)')
 pyplot.grid()
 pyplot.plot(valid_acc, label='Valid classification accuracy (%)', color='#ED5724')
 pyplot.legend(loc=1)
-pyplot.savefig('plots/resnet164_bottleneck_fullpreactivation_L2.png')
+pyplot.savefig('plots/resnet110_fullpreactivation_L2_sgd.png')
 pyplot.clf()
 #pyplot.show()

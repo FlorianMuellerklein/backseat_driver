@@ -13,6 +13,7 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * Individual models get 99.5-99.9% (random 10% valid on each training net)
 * Single model submission score - 0.71352
 * Ensemble submission score - 0.30114
+* Including batch iterator bug
 
 ## Past solution
 
@@ -34,6 +35,10 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * RGB intensity - (-25,25)
 
 ## Things that have worked well
+
+
+
+## Everything below this had bugs in the batch iterator :-/
 
 ### ResNet110
 * Initial filter num - 16

@@ -18,6 +18,8 @@ import theano
 from theano import tensor as T
 
 PIXELS = 64
+PAD_CROP = 8
+PAD_PIXELS = PIXELS + (PAD_CROP * 2)
 imageSize = PIXELS * PIXELS
 num_features = imageSize * 3
 
@@ -110,6 +112,67 @@ def plot_sample(img):
 def fast_warp(img, tf, output_shape, mode='nearest'):
     return transform._warps_cy._warp_fast(img, tf.params, output_shape=output_shape, mode=mode)
 
+def batch_iterator_train_crop_flip_color(data, y, batchsize, train_fn):
+    '''
+    Data augmentation batch iterator for feeding images into CNN.
+    Pads each image with 8 pixels on every side.
+    Randomly crops image with original image shape from padded image. Effectively translating it.
+    Flips image lr with probability 0.5.
+    Randomly perturbs intensity of color channels by ~10 percent of intensity.
+    '''
+    n_samples = data.shape[0]
+    data, y = shuffle(data, y)
+    loss = []
+    acc_train = 0.
+    for i in range((n_samples + batchsize - 1) // batchsize):
+        sl = slice(i * batchsize, (i + 1) * batchsize)
+        X_batch = data[sl]
+        y_batch = y[sl]
+
+        # color intensity augmentation
+        r_intensity = random.randint(0,1)
+        g_intensity = random.randint(0,1)
+        b_intensity = random.randint(0,1)
+        intensity_scaler = random.randint(-25, 25) / 255.
+
+        # pad and crop settings
+        trans_1 = random.randint(0, (PAD_CROP*2))
+        trans_2 = random.randint(0, (PAD_CROP*2))
+        crop_x1 = trans_1
+        crop_x2 = (PIXELS + trans_1)
+        crop_y1 = trans_2
+        crop_y2 = (PIXELS + trans_2)
+
+        # flip left-right choice
+        flip_lr = random.randint(0,1)
+
+        # set empty copy to hold augmented images so that we don't overwrite
+        X_batch_aug = np.copy(X_batch)
+
+        # for each image in the batch do the augmentation
+        for j in range(X_batch.shape[0]):
+            # for each image channel
+            for k in range(X_batch.shape[1]):
+                # pad and crop images
+                img_pad = np.pad(X_batch_aug[j,k], pad_width=((PAD_CROP,PAD_CROP), (PAD_CROP,PAD_CROP)), mode='constant')
+                X_batch_aug[j,k] = img_pad[crop_x1:crop_x2, crop_y1:crop_y2]
+
+                # flip left-right if chosen
+                if flip_lr == 1:
+                    X_batch_aug[j,k] = np.fliplr(X_batch_aug[j,k])
+
+            if r_intensity == 1:
+                X_batch_aug[j][0] = X_batch_aug[j][0] + intensity_scaler
+            if g_intensity == 1:
+                X_batch_aug[j][1] = X_batch_aug[j][1] + intensity_scaler
+            if b_intensity == 1:
+                X_batch_aug[j][2] = X_batch_aug[j][2] + intensity_scaler
+
+        # fit model on each batch
+        loss.append(train_fn(X_batch_aug, y_batch))
+
+    return np.mean(loss)
+
 def batch_iterator_train(data, y, batchsize, train_fn, leftright=True):
     '''
     Data augmentation batch iterator for feeding images into CNN.
@@ -131,9 +194,8 @@ def batch_iterator_train(data, y, batchsize, train_fn, leftright=True):
         dorotate = random.randint(-15,15)
 
         # random translations
-        trans_1 = random.randint(-6,6)
-        trans_2 = random.randint(-6,6)
-        crop_amt = ((4 - trans_1, 4 + trans_1), (4 - trans_2, 4 + trans_2))
+        trans_1 = random.randint(-8,8)
+        trans_2 = random.randint(-8,8)
 
         # random zooms
         zoom = random.uniform(0.8, 1.2)
@@ -180,12 +242,9 @@ def batch_iterator_train(data, y, batchsize, train_fn, leftright=True):
             for k in range(X_batch.shape[1]):
                 X_batch_aug[j,k] = fast_warp(X_batch[j,k], tform, output_shape=(PIXELS,PIXELS))
                 if flip_lr == 1:
-                    X_batch_aug[j,k] = np.fliplr(X_batch[j,k])
+                    X_batch_aug[j,k] = np.fliplr(X_batch_aug[j,k])
                 #if flip_ud == 1:
-                #    X_batch_aug[j,k] = np.flipud(X_batch[j,k])
-
-                #img_crop = crop(X_batch_aug[j,k], crop_amt)
-                #X_batch_aug[j,k] = transform.resize(img_crop, output_shape=(PIXELS, PIXELS))
+                #    X_batch_aug[j,k] = np.flipud(X_batch_aug[j,k])
 
             if r_intensity == 1:
                 X_batch_aug[j][0] = X_batch_aug[j][0] + intensity_scaler

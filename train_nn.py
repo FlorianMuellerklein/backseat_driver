@@ -20,12 +20,12 @@ import warnings
 warnings.filterwarnings("ignore")
 
 # training params
-ITERS = 200
-BATCHSIZE = 32
+ITERS = 75
+BATCHSIZE = 64
 LR_SCHEDULE = {
-    0: 0.01,
-    80: 0.001,
-    120: 0.0001
+    0: 0.001,
+    35: 0.0001,
+    65: 0.00001
 }
 
 encoder = LabelEncoder()
@@ -61,8 +61,8 @@ test_acc = T.mean(T.eq(T.argmax(output_test, axis=1), Y), dtype=theano.config.fl
 # get parameters from network and set up sgd with nesterov momentum to update parameters, l_r is shared var so it can be changed
 l_r = theano.shared(np.array(LR_SCHEDULE[0], dtype=theano.config.floatX))
 params = lasagne.layers.get_all_params(output_layer, trainable=True)
-updates = nesterov_momentum(loss, params, learning_rate=l_r, momentum=0.9)
-#updates = adam(loss, params, learning_rate=l_r)
+#updates = nesterov_momentum(loss, params, learning_rate=l_r, momentum=0.9)
+updates = adam(loss, params, learning_rate=l_r)
 
 # set up training and prediction functions
 train_fn = theano.function(inputs=[X,Y], outputs=loss, updates=updates)

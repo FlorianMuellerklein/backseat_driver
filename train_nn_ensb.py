@@ -13,14 +13,14 @@ from lasagne.layers import helper
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.manifold import TSNE
 
-from models import vgg16, ResNet_Orig, ResNet_FullPreActivation, ResNet_BottleNeck_FullPreActivation
+from models import vgg16, ResNet_Orig, ResNet_FullPre, ResNet_BttlNck_FullPre
 from utils import load_train_cv, batch_iterator_train, batch_iterator_valid
 
 from matplotlib import pyplot
 
 # training params
 ITERS = 75
-BATCHSIZE = 32
+BATCHSIZE = 64
 LR_SCHEDULE = {
     0: 0.001,
     35: 0.0001,
@@ -32,7 +32,7 @@ tsne = TSNE(verbose=1)
 
 encoder = LabelEncoder()
 
-nn_count = 1
+nn_count = 5
 try:
     for ensb in range(20):
         """
@@ -42,7 +42,7 @@ try:
         Y = T.ivector('y')
 
         # set up theano functions to generate output by feeding data through network, any test outputs should be deterministic
-        output_layer = ResNet_FullPreActivation(X)
+        output_layer = ResNet_FullPre(X)
         output_train = lasagne.layers.get_output(output_layer)
         output_test = lasagne.layers.get_output(output_layer, deterministic=True)
 
@@ -116,7 +116,7 @@ try:
 
         # save weights
         #all_params = helper.get_all_param_values(output_layer)
-        f = gzip.open('data/weights/weights_resnet110_fullpre_' + str(nn_count) + '.pklz', 'wb')
+        f = gzip.open('data/weights/resnet110_fullpre_' + str(nn_count) + '.pklz', 'wb')
         pickle.dump(best_params, f)
         f.close()
 

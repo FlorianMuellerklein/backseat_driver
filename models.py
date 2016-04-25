@@ -164,10 +164,12 @@ def ResNet_Orig(input_var=None, n=9):
 
     return network
 
-def ResNet_FullPreActivation(input_var=None, n=18):
+def ResNet_FullPre(input_var=None, n=18):
     '''
     Adapted from https://github.com/Lasagne/Recipes/tree/master/papers/deep_residual_learning.
     Tweaked to be consistent with 'Identity Mappings in Deep Residual Networks', Kaiming He et al. 2016 (https://arxiv.org/abs/1603.05027)
+
+    Forumala to figure out depth: 6n + 2
     '''
     # create a residual learning building block with two stacked 3x3 convlayers as in paper
     def residual_block(l, increase_dim=False, projection=True, first=False):
@@ -179,9 +181,13 @@ def ResNet_FullPreActivation(input_var=None, n=18):
             first_stride = (1,1)
             out_num_filters = input_num_filters
 
-        # contains the BN -> ReLU portion, steps 1 to 2
-        bn_pre_conv = BatchNormLayer(l)
-        bn_pre_relu = NonlinearityLayer(bn_pre_conv, rectify)
+        if first:
+            # hacky solution to keep layers correct
+            bn_pre_relu = l
+        else:
+            # contains the BN -> ReLU portion, steps 1 to 2
+            bn_pre_conv = BatchNormLayer(l)
+            bn_pre_relu = NonlinearityLayer(bn_pre_conv, rectify)
 
         # contains the weight -> BN -> ReLU portion, steps 3 to 5
         conv_1 = batch_norm(ConvLayer(bn_pre_relu, num_filters=out_num_filters, filter_size=(3,3), stride=first_stride, nonlinearity=rectify, pad='same', W=he_norm))
@@ -191,15 +197,9 @@ def ResNet_FullPreActivation(input_var=None, n=18):
 
         # add shortcut connections
         if increase_dim:
-            if projection:
-                # projection shortcut, as option B in paper
-                projection = ConvLayer(l, num_filters=out_num_filters, filter_size=(1,1), stride=(2,2), nonlinearity=None, pad='same', b=None)
-                block = ElemwiseSumLayer([conv_2, projection])
-            else:
-                # identity shortcut, as option A in paper
-                identity = ExpressionLayer(l, lambda X: X[:, :, ::2, ::2], lambda s: (s[0], s[1], s[2]//2, s[3]//2))
-                padding = PadLayer(identity, [out_num_filters//4,0,0], batch_ndim=1)
-                block = ElemwiseSumLayer([conv_2, padding])
+            # projection shortcut, as option B in paper
+            projection = ConvLayer(l, num_filters=out_num_filters, filter_size=(1,1), stride=(2,2), nonlinearity=None, pad='same', b=None)
+            block = ElemwiseSumLayer([conv_2, projection])
         else:
             block = ElemwiseSumLayer([conv_2, l])
 
@@ -209,7 +209,7 @@ def ResNet_FullPreActivation(input_var=None, n=18):
     l_in = InputLayer(shape=(None, 3, PIXELS, PIXELS), input_var=input_var)
 
     # first layer, output is 64 x 32 x 32
-    l = ConvLayer(l_in, num_filters=16, filter_size=(3,3), stride=(1,1), nonlinearity=None, pad='same', W=he_norm)
+    l = batch_norm(ConvLayer(l_in, num_filters=16, filter_size=(3,3), stride=(1,1), nonlinearity=rectify, pad='same', W=he_norm))
 
     # first stack of residual blocks, output is 32 x 32 x 32
     for _ in range(n):
@@ -236,7 +236,7 @@ def ResNet_FullPreActivation(input_var=None, n=18):
 
     return network
 
-def ResNet_BottleNeck_FullPreActivation(input_var=None, n=18):
+def ResNet_BttlNck_FullPre(input_var=None, n=18):
     '''
     Adapted from https://github.com/Lasagne/Recipes/tree/master/papers/deep_residual_learning.
     Tweaked to be consistent with 'Identity Mappings in Deep Residual Networks', Kaiming He et al. 2016 (https://arxiv.org/abs/1603.05027)
@@ -256,13 +256,18 @@ def ResNet_BottleNeck_FullPreActivation(input_var=None, n=18):
 
         bottleneck_filters = out_num_filters / 4
 
-        bn_pre_conv = BatchNormLayer(l)
-        bn_pre_relu = NonlinearityLayer(bn_pre_conv, rectify)
+        if first:
+            # hacky solution to keep layers correct
+            bn_pre_relu = l
+        else:
+            # contains the BN -> ReLU portion, steps 1 to 2
+            bn_pre_conv = BatchNormLayer(l)
+            bn_pre_relu = NonlinearityLayer(bn_pre_conv, rectify)
 
         # contains the weight -> BN -> ReLU portion, steps 3 to 5
-        conv_1 = batch_norm(ConvLayer(bn_pre_relu, num_filters=bottleneck_filters, filter_size=(1,1), stride=first_stride, nonlinearity=rectify, pad=0, W=he_norm))
+        conv_1 = batch_norm(ConvLayer(bn_pre_relu, num_filters=bottleneck_filters, filter_size=(1,1), stride=(1,1), nonlinearity=rectify, pad=0, W=he_norm))
 
-        conv_2 = batch_norm(ConvLayer(conv_1, num_filters=bottleneck_filters, filter_size=(3,3), stride=(1,1), nonlinearity=rectify, pad=1, W=he_norm))
+        conv_2 = batch_norm(ConvLayer(conv_1, num_filters=bottleneck_filters, filter_size=(3,3), stride=first_stride, nonlinearity=rectify, pad=1, W=he_norm))
 
         # contains the last weight portion, step 6
         conv_3 = ConvLayer(conv_2, num_filters=out_num_filters, filter_size=(1,1), stride=(1,1), nonlinearity=None, pad=0, W=he_norm)
@@ -279,19 +284,19 @@ def ResNet_BottleNeck_FullPreActivation(input_var=None, n=18):
     # Building the network
     l_in = InputLayer(shape=(None, 3, PIXELS, PIXELS), input_var=input_var)
 
-    # first layer, output is 16 x 32 x 32
-    l = ConvLayer(l_in, num_filters=16, filter_size=(3,3), stride=(1,1), nonlinearity=None, pad=1, W=he_norm)
+    # first layer, output is 64 x 32 x 32
+    l = batch_norm(ConvLayer(l_in, num_filters=64, filter_size=(3,3), stride=(1,1), nonlinearity=rectify, pad=1, W=he_norm))
 
-    # first stack of residual blocks, output is 32 x 32 x 32
+    # first stack of residual blocks, output is 128 x 32 x 32
     for _ in range(n):
         l = residual_bottleneck_block(l, first=True)
 
-    # second stack of residual blocks, output is 64 x 16 x 16
+    # second stack of residual blocks, output is 256 x 16 x 16
     l = residual_bottleneck_block(l, increase_dim=True)
     for _ in range(1,n):
         l = residual_bottleneck_block(l)
 
-    # third stack of residual blocks, output is 128 x 8 x 8
+    # third stack of residual blocks, output is 512 x 8 x 8
     l = residual_bottleneck_block(l, increase_dim=True)
     for _ in range(1,n):
         l = residual_bottleneck_block(l)

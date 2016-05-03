@@ -8,11 +8,12 @@ from theano import tensor as T
 
 import lasagne
 from lasagne.updates import nesterov_momentum, adam
-from lasagne.layers import helper
+from lasagne.layers import helper, DenseLayer
+from lasagne.nonlinearities import softmax
 
-from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.preprocessing import LabelEncoder
 
-from models import vgg16, ResNet_Orig, ResNet_FullPreActivation, ResNet_BottleNeck_FullPreActivation
+from models import vgg16, ResNet_Orig, ResNet_FullPre, ResNet_BttlNck_FullPre
 from utils import load_train_cv, batch_iterator_train, batch_iterator_valid, batch_iterator_train_crop_flip_color
 
 from matplotlib import pyplot
@@ -20,12 +21,11 @@ import warnings
 warnings.filterwarnings("ignore")
 
 # training params
-ITERS = 75
-BATCHSIZE = 64
+ITERS = 100
+BATCHSIZE = 32
 LR_SCHEDULE = {
-    0: 0.001,
-    35: 0.0001,
-    65: 0.00001
+    0: 0.0001,
+    60: 0.00001
 }
 
 encoder = LabelEncoder()
@@ -38,7 +38,19 @@ Y = T.ivector('y')
 
 # set up theano functions to generate output by feeding data through network, any test outputs should be deterministic
 # load model
-output_layer = ResNet_FullPreActivation(X)
+output_layer = ResNet_FullPre(X, n=5)
+
+# finetune from CIFAR weights
+#net, avg_pool = ResNet_FullPre(X, n=18)
+# load network weights
+#f = gzip.open('/Volumes/Mildred/Data/Identity_Mappings_ResNet_Lasagne/data/weights/resnet110_fullpreactivation_638.pklz', 'rb')
+#pre_params = pickle.load(f)
+#f.close()
+#helper.set_all_param_values(net, pre_params)
+
+# stack our own softmax onto the final layer
+#output_layer = DenseLayer(avg_pool, num_units=10, W=lasagne.init.HeNormal(), nonlinearity=softmax)
+
 # create outputs
 output_train = lasagne.layers.get_output(output_layer)
 output_test = lasagne.layers.get_output(output_layer, deterministic=True)
@@ -83,7 +95,7 @@ print np.amax(train_X)
 train_eval = []
 valid_eval = []
 valid_acc = []
-best_acc = 0.0
+best_vl = 1.0
 try:
     for epoch in range(ITERS):
         # change learning rate according to schedules
@@ -92,7 +104,7 @@ try:
         # do the training
         start = time.time()
 
-        train_loss = batch_iterator_train(train_X, train_y, BATCHSIZE, train_fn)
+        train_loss = batch_iterator_train_crop_flip_color(train_X, train_y, BATCHSIZE, train_fn)
         train_eval.append(train_loss)
 
         valid_loss, acc_v = batch_iterator_valid(test_X, test_y, BATCHSIZE, valid_fn)
@@ -104,18 +116,17 @@ try:
         # print training details
         print 'iter:', epoch, '| TL:', np.round(train_loss,decimals=3), '| VL:', np.round(valid_loss,decimals=3), '| Vacc:', np.round(acc_v,decimals=3), '| Ratio:', np.round(ratio,decimals=2), '| Time:', np.round(end,decimals=1)
 
-        if acc_v > best_acc:
-            best_acc = acc_v
+        if valid_loss < best_vl:
+            best_vl = valid_loss
             best_params = helper.get_all_param_values(output_layer)
 
 except KeyboardInterrupt:
     pass
 
-print "Final Acc:", best_acc
+print "Best Valid Loss:", best_vl
 
 # save weights
-all_params = helper.get_all_param_values(output_layer)
-f = gzip.open('data/weights/resnet110_fullpreactivation_sgd.pklz', 'wb')
+f = gzip.open('data/weights/resnet45_fullpre_less_L2.pklz', 'wb')
 pickle.dump(best_params, f)
 f.close()
 
@@ -134,6 +145,6 @@ pyplot.ylabel('Valid Acc (%)')
 pyplot.grid()
 pyplot.plot(valid_acc, label='Valid classification accuracy (%)', color='#ED5724')
 pyplot.legend(loc=1)
-pyplot.savefig('plots/resnet110_fullpreactivation_L2_sgd.png')
+pyplot.savefig('plots/resnet45_fullpre_less_L2.png')
 pyplot.clf()
 #pyplot.show()

@@ -10,21 +10,18 @@ import lasagne
 from lasagne.updates import nesterov_momentum, adam
 from lasagne.layers import helper
 
-from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.preprocessing import LabelEncoder
 from sklearn.manifold import TSNE
 
-from models import vgg16, ResNet_Orig, ResNet_FullPre, ResNet_BttlNck_FullPre
-from utils import load_train_cv, batch_iterator_train, batch_iterator_valid
-
-from matplotlib import pyplot
+from models import ResNet_FullPre, ResNet_BttlNck_FullPre
+from utils import load_train_cv, batch_iterator_train, batch_iterator_valid, batch_iterator_train_crop_flip_color
 
 # training params
-ITERS = 75
-BATCHSIZE = 64
+ITERS = 100
+BATCHSIZE = 32
 LR_SCHEDULE = {
     0: 0.001,
-    35: 0.0001,
-    65: 0.00001
+    60: 0.0001
 }
 
 # T-SNE
@@ -32,9 +29,9 @@ tsne = TSNE(verbose=1)
 
 encoder = LabelEncoder()
 
-nn_count = 5
+nn_count = 1
 try:
-    for ensb in range(20):
+    for ensb in range(10):
         """
         Set up all theano functions
         """
@@ -42,7 +39,7 @@ try:
         Y = T.ivector('y')
 
         # set up theano functions to generate output by feeding data through network, any test outputs should be deterministic
-        output_layer = ResNet_FullPre(X)
+        output_layer = ResNet_FullPre(X, n=5)
         output_train = lasagne.layers.get_output(output_layer)
         output_test = lasagne.layers.get_output(output_layer, deterministic=True)
 
@@ -96,7 +93,7 @@ try:
             # do the training
             start = time.time()
 
-            train_loss = batch_iterator_train(train_X, train_y, BATCHSIZE, train_fn, leftright=True)
+            train_loss = batch_iterator_train_crop_flip_color(train_X, train_y, BATCHSIZE, train_fn)
             train_eval.append(train_loss)
 
             valid_loss, acc_v = batch_iterator_valid(test_X, test_y, BATCHSIZE, valid_fn)
@@ -116,7 +113,7 @@ try:
 
         # save weights
         #all_params = helper.get_all_param_values(output_layer)
-        f = gzip.open('data/weights/resnet110_fullpre_' + str(nn_count) + '.pklz', 'wb')
+        f = gzip.open('data/weights/resnet32_fullpre_' + str(nn_count) + '.pklz', 'wb')
         pickle.dump(best_params, f)
         f.close()
 

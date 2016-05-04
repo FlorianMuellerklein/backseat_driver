@@ -26,21 +26,36 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * Single model submission score - 1.03804
 * Ensemble submission score - 0.38794
 
+### Crop Pad Color augmentation
+* Pad images with 16 PIXELS
+* Random crops of original image size
+* random color intensity for each channel
+
 ### Current Data augmentation
 * rotation - (-15,15)
 * translation - (-6,6)
 * zoom - (0.8,1.2)
-* flip_lr - True (50%)
+* flip_lr - False (50%)
 * flip_ud - False
 * RGB intensity - (-25,25)
 
 ## Things that have worked well
 
+### ResNet-38 (Bug Free)
+* Initial filter num - 16
+* FullPreActivation
+* Batch size - 32
+* L2 regularization - 0.0001 (same as paper)
+* ADAM for 100 epoch - lr_schedule = {0:0.001, 60:0.0001}
+* Pad Crop Color Augmentations
+* Mean centered image scaling
+* Projection option
+* Individual accuracy - 99.8%
+* Submission score - 0.46547
 
+## Everything below this had bugs in the batch iterator and ResNet Architecture :-/
 
-## Everything below this had bugs in the batch iterator :-/
-
-### ResNet110
+### ResNet-110
 * Initial filter num - 16
 * FullPreActivation
 * Batch size - 32
@@ -50,7 +65,7 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * Individual accuracy - 99.7%
 * Submission score - 0.60583
 
-### ResNet110 - Relabeled Training
+### ResNet-110 - Relabeled Training
 * Initial filter num - 16
 * FullPreActivation
 * Batch size - 32
@@ -60,7 +75,7 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * Individual accuracy - 99.7%
 * Submission score - 0.63784
 
-### ResNet56
+### ResNet-56
 * Initial filter num - 32
 * L2 regularization - 0.0001 (same as paper)
 * ADAM for 60 epoch - lr_schedule = {0:0.001, 15:0.0001, 30:0.00001, 50:0.000001}
@@ -99,7 +114,7 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * Submission score - 0.82991
 * Batch size - 16
 
-### ResNet34
+### ResNet-34
 * Initial filter num - 16
 * ADAM for 60 epoch - lr_schedule = {0:0.001, 15:0.0001, 30:0.00001, 50:0.000001}
 * Identity option
@@ -118,8 +133,7 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 
 ## Things currently trying
 
-* Relabel training examples with ResNet110 then retrain network with new labels
-* Try to find optimal number of epoch and lr_schedule
+* Ensemble of 10 ResNet32 with pad, crop, color augmentation (no flip_lr), test-time-augmentations.
 
 ## To try later
 
@@ -134,4 +148,5 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 
 ## Things that didn't really work out
 
+* Ensemble of 19 ResNet-110 with lr and old augmentations.
 * Random forest on fc7 features. The thought was that it might draw very different decision boundaries through the learned ConvNet feature representations than the softmax. So it might be useful to blend with the softmax predictions.

@@ -13,7 +13,7 @@ from lasagne.nonlinearities import softmax
 
 from sklearn.preprocessing import LabelEncoder
 
-from models import vgg16, ResNet_Orig, ResNet_FullPre, ResNet_BttlNck_FullPre
+from models import vgg16, ResNet_Orig, ResNet_FullPre, ResNet_BttlNck_FullPre, ResNet_FullPre_ELU
 from utils import load_train_cv, batch_iterator_train, batch_iterator_valid, batch_iterator_train_crop_flip_color
 
 from matplotlib import pyplot
@@ -24,8 +24,8 @@ warnings.filterwarnings("ignore")
 ITERS = 100
 BATCHSIZE = 32
 LR_SCHEDULE = {
-    0: 0.0001,
-    60: 0.00001
+    0: 0.001,
+    60: 0.0001
 }
 
 encoder = LabelEncoder()
@@ -38,7 +38,7 @@ Y = T.ivector('y')
 
 # set up theano functions to generate output by feeding data through network, any test outputs should be deterministic
 # load model
-output_layer = ResNet_FullPre(X, n=5)
+output_layer = ResNet_FullPre_ELU(X, n=5)
 
 # finetune from CIFAR weights
 #net, avg_pool = ResNet_FullPre(X, n=18)
@@ -95,7 +95,7 @@ print np.amax(train_X)
 train_eval = []
 valid_eval = []
 valid_acc = []
-best_vl = 1.0
+best_vl = 3.0
 try:
     for epoch in range(ITERS):
         # change learning rate according to schedules
@@ -126,7 +126,7 @@ except KeyboardInterrupt:
 print "Best Valid Loss:", best_vl
 
 # save weights
-f = gzip.open('data/weights/resnet45_fullpre_less_L2.pklz', 'wb')
+f = gzip.open('data/weights/resnet45_fullpre_128_elu.pklz', 'wb')
 pickle.dump(best_params, f)
 f.close()
 
@@ -145,6 +145,6 @@ pyplot.ylabel('Valid Acc (%)')
 pyplot.grid()
 pyplot.plot(valid_acc, label='Valid classification accuracy (%)', color='#ED5724')
 pyplot.legend(loc=1)
-pyplot.savefig('plots/resnet45_fullpre_less_L2.png')
+pyplot.savefig('plots/resnet45_fullpre_128_elu.png')
 pyplot.clf()
 #pyplot.show()

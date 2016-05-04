@@ -38,18 +38,7 @@ Y = T.ivector('y')
 
 # set up theano functions to generate output by feeding data through network, any test outputs should be deterministic
 # load model
-output_layer = ResNet_FullPre_ELU(X, n=5)
-
-# finetune from CIFAR weights
-#net, avg_pool = ResNet_FullPre(X, n=18)
-# load network weights
-#f = gzip.open('/Volumes/Mildred/Data/Identity_Mappings_ResNet_Lasagne/data/weights/resnet110_fullpreactivation_638.pklz', 'rb')
-#pre_params = pickle.load(f)
-#f.close()
-#helper.set_all_param_values(net, pre_params)
-
-# stack our own softmax onto the final layer
-#output_layer = DenseLayer(avg_pool, num_units=10, W=lasagne.init.HeNormal(), nonlinearity=softmax)
+output_layer = ResNet_FullPre(X, n=5)
 
 # create outputs
 output_train = lasagne.layers.get_output(output_layer)
@@ -126,7 +115,7 @@ except KeyboardInterrupt:
 print "Best Valid Loss:", best_vl
 
 # save weights
-f = gzip.open('data/weights/resnet45_fullpre_128_elu.pklz', 'wb')
+f = gzip.open('data/weights/resnet45_fullpre_128.pklz', 'wb')
 pickle.dump(best_params, f)
 f.close()
 
@@ -145,6 +134,6 @@ pyplot.ylabel('Valid Acc (%)')
 pyplot.grid()
 pyplot.plot(valid_acc, label='Valid classification accuracy (%)', color='#ED5724')
 pyplot.legend(loc=1)
-pyplot.savefig('plots/resnet45_fullpre_128_elu.png')
+pyplot.savefig('plots/resnet45_fullpre_128.png')
 pyplot.clf()
 #pyplot.show()

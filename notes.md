@@ -31,7 +31,7 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * Random crops of original image size
 * random color intensity for each channel
 
-### Current Data augmentation
+### Old augmentation
 * rotation - (-15,15)
 * translation - (-6,6)
 * zoom - (0.8,1.2)

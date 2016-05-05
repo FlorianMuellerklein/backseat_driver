@@ -41,7 +41,7 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 
 ## Things that have worked well
 
-### ResNet-38 (Bug Free)
+### ResNet-42 (Bug Free)
 * Initial filter num - 16
 * FullPreActivation
 * Batch size - 32
@@ -52,6 +52,18 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * Projection option
 * Individual accuracy - 99.8%
 * Submission score - 0.46547
+
+### ResNet-42 very LeakyReLU(Bug Free)
+* Initial filter num - 16
+* FullPreActivation
+* Batch size - 32
+* L2 regularization - 0.0001 (same as paper)
+* ADAM for 100 epoch - lr_schedule = {0:0.001, 60:0.0001}
+* Pad Crop Color Augmentations
+* Mean centered image scaling
+* Projection option
+* Individual accuracy - 99.8%
+* Submission score - 0.60455
 
 ## Everything below this had bugs in the batch iterator and ResNet Architecture :-/
 
@@ -137,11 +149,13 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 
 ## To try later
 
+* Extract features from scratch and Pretrained models, concat features then train MLP on those.
+* MLP at the end of ResNet
 * Whatever my best ensemble is, add test time augmentations (without flipping)
 * SGD instead of ADAM, SGD should reach better accuracy but slower training.
 * Test whether LR flips hurt scores
 * Start testing single models instead of ensembles, then ensemble best singles for final submission
-* Train ResNet56 with 64 channel for longer than 80 epoch, score dropped from 60 to 80, maybe try 120
+* Try increased number of filters for ResNets, 16 might be low
 * Train any models for longer than 60 to see if the scores become more stable.
 * Train models without lr_decay and look at plots to get an idea about the best decay points. (ResNets use decay points from VGG training, might not be optimal)
 * VGG with L2 regularization

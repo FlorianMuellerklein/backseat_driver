@@ -20,9 +20,15 @@ from matplotlib import pyplot
 import warnings
 warnings.filterwarnings("ignore")
 
+import argparsing
+args = argparsing.parse_args()
+
 # training params
-ITERS = 100
-BATCHSIZE = 32
+experiment_label = args.label
+PIXELS = args.pixels
+ITERS = args.epochs
+BATCHSIZE = args.batchsize
+
 LR_SCHEDULE = {
     0: 0.001,
     60: 0.0001
@@ -115,7 +121,7 @@ except KeyboardInterrupt:
 print "Best Valid Loss:", best_vl
 
 # save weights
-f = gzip.open('data/weights/resnet45_fullpre_128.pklz', 'wb')
+f = gzip.open('data/weights/%s.pklz'%experiment_label, 'wb')
 pickle.dump(best_params, f)
 f.close()
 
@@ -134,6 +140,6 @@ pyplot.ylabel('Valid Acc (%)')
 pyplot.grid()
 pyplot.plot(valid_acc, label='Valid classification accuracy (%)', color='#ED5724')
 pyplot.legend(loc=1)
-pyplot.savefig('plots/resnet45_fullpre_128.png')
+pyplot.savefig('plots/%s.png'%experiment_label)
 pyplot.clf()
 #pyplot.show()

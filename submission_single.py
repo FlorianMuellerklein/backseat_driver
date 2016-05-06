@@ -25,9 +25,11 @@ from skimage import transform, filters, exposure
 from models import vgg16, ResNet_Orig, ResNet_FullPre, ResNet_BttlNck_FullPre, blvc_googlenet, inception_v3
 from utils import load_test, batch_iterator_train, batch_iterator_valid
 
-# testing params
-BATCHSIZE = 32
-PIXELS = 96
+import argparsing
+args = argparsing.parse_args()
+experiment_label = args.label
+PIXELS = args.pixels
+
 imageSize = PIXELS * PIXELS
 num_features = imageSize * 3
 
@@ -55,7 +57,8 @@ Load data and make predictions
 X_test, X_test_id = load_test(cache=True)
 
 # load network weights
-f = gzip.open('data/weights/resnet45_fullpre_more_L2.pklz', 'rb')
+#f = gzip.open('data/weights/resnet45_fullpre_more_L2.pklz', 'rb')
+f = gzip.open('data/weights/%s.pklz'%experiment_label, 'rb')
 all_params = pickle.load(f)
 f.close()
 helper.set_all_param_values(output_layer, all_params)
@@ -135,7 +138,7 @@ def create_submission(predictions, test_id):
     if not os.path.isdir('subm'):
         os.mkdir('subm')
     suffix = str(now.strftime("%Y-%m-%d-%H-%M"))
-    sub_file = os.path.join('subm', 'resnet45_more_L2.csv')
+    sub_file = os.path.join('subm', '%s.csv'%experiment_label)
     result1.to_csv(sub_file, index=False)
 
 create_submission(predictions, X_test_id)

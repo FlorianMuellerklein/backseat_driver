@@ -17,7 +17,11 @@ from skimage import transform, filters, exposure
 import theano
 from theano import tensor as T
 
-PIXELS = 64
+import argparsing
+args = argparsing.parse_args()
+
+PIXELS = args.pixels
+
 PAD_CROP = 8
 PAD_PIXELS = PIXELS + (PAD_CROP * 2)
 imageSize = PIXELS * PIXELS
@@ -26,8 +30,8 @@ num_features = imageSize * 3
 tsne = TSNE(verbose=1)
 
 def load_train_cv(encoder, cache=False, relabel=False):
-    if cache:
-        X_train = np.load('data/cache/X_train_small.npy')
+    if cache and os.path.isfile('data/cache/X_train_%d.npy'%PIXELS):
+        X_train = np.load('data/cache/X_train_%d.npy'%PIXELS)
         if relabel:
             y_train = np.load('data/cache/y_train_small_relabel.npy')
         else:
@@ -52,7 +56,7 @@ def load_train_cv(encoder, cache=False, relabel=False):
         X_train = np.array(X_train)
         y_train = np.array(y_train)
 
-        np.save('data/cache/X_train_small.npy', X_train)
+        np.save('data/cache/X_train_%d.npy'%PIXELS, X_train)
         np.save('data/cache/y_train_small.npy', y_train)
 
         plot_sample(X_train[0])
@@ -69,7 +73,7 @@ def load_train_cv(encoder, cache=False, relabel=False):
     return X_train, y_train, X_test, y_test, encoder
 
 def load_test(cache=False):
-    if cache:
+    if cache and os.path.isfile('data/cache/X_test_%s.npy'%PIXELS):
         X_test = np.load('data/cache/X_test_small.npy')
         X_test_id = np.load('data/cache/X_test_id_small.npy')
     else:

@@ -18,7 +18,7 @@ from keras.layers.convolutional import Convolution2D, MaxPooling2D, \
                                        ZeroPadding2D
 
 # from keras.layers.normalization import BatchNormalization
-# from keras.optimizers import Adam
+from keras.optimizers import Adam
 from keras.optimizers import SGD
 from keras.utils import np_utils
 from keras.models import model_from_json
@@ -332,19 +332,25 @@ def vgg_std16_model(img_rows, img_cols, color_type=1):
 
     # Code above loads pre-trained data and
     model.layers.pop()
+    model.layers.pop()
+    model.layers[-1].outbound_nodes = []
+    model.outputs = [model.layers[-1].output]
+    model.built = False
+
+    model.add(Dropout(0.5))
     model.add(Dense(10, activation='softmax'))
     # Learning rate is changed to 0.001
     sgd = SGD(lr=1e-3, decay=1e-6, momentum=0.9, nesterov=True)
+
     model.compile(optimizer=sgd, loss='categorical_crossentropy', metrics=['accuracy'])
     return model
 
 
 def run_cross_validation(nfolds=10, nb_epoch=10, split=0.2, modelStr=''):
-
     # Now it loads color image
     # input image dimensions
     img_rows, img_cols = 224, 224
-    batch_size = 64
+    batch_size = 32
     random_state = 20
 
     train_data, train_target, driver_id, unique_drivers = \

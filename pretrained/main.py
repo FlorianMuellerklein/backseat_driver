@@ -335,7 +335,7 @@ def vgg_std16_model(img_rows, img_cols, color_type=1):
     model.add(Dense(10, activation='softmax'))
     # Learning rate is changed to 0.001
     sgd = SGD(lr=1e-3, decay=1e-6, momentum=0.9, nesterov=True)
-    model.compile(optimizer=sgd, loss='categorical_crossentropy')
+    model.compile(optimizer=sgd, loss='categorical_crossentropy', metrics=['accuracy'])
     return model
 
 
@@ -377,7 +377,7 @@ def run_cross_validation(nfolds=10, nb_epoch=10, split=0.2, modelStr=''):
 
         model.fit(train_data, train_target, batch_size=batch_size,
                   nb_epoch=nb_epoch,
-                  show_accuracy=True, verbose=1,
+                  verbose=1,
                   validation_split=split, shuffle=True)
 
         # print('losses: ' + hist.history.losses[-1])

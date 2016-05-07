@@ -304,8 +304,11 @@ def ResNet_FullPre(input_var=None, n=5):
     # average pooling
     avg_pool = GlobalPoolLayer(bn_post_relu)
 
+    #l_hidden1 = batch_norm(DenseLayer(avg_pool, num_units=1024, W=he_norm, nonlinearity=rectify))
+    #l_hidden2 = batch_norm(DenseLayer(l_hidden1, num_units=1024, W=he_norm, nonlinearity=rectify))
+
     # fully connected layer
-    network = DenseLayer(avg_pool, num_units=10, W=HeNormal(), nonlinearity=softmax)
+    network = DenseLayer(bn_post_relu, num_units=10, W=HeNormal(), nonlinearity=softmax)
 
     return network
 

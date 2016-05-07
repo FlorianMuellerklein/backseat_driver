@@ -15,6 +15,7 @@ from sklearn.preprocessing import LabelEncoder
 
 from models import vgg16, ResNet_Orig, ResNet_FullPre, ResNet_BttlNck_FullPre, ResNet_FullPre_ELU
 from utils import load_train_cv, batch_iterator_train, batch_iterator_valid, batch_iterator_train_crop_flip_color
+from crossvalidation import load_cv_fold
 
 from matplotlib import pyplot
 import warnings
@@ -81,7 +82,8 @@ load training data and start training
 encoder = LabelEncoder()
 
 # load the training and validation data sets
-train_X, train_y, test_X, test_y, encoder = load_train_cv(encoder, cache=True, relabel=False)
+#train_X, train_y, test_X, test_y, encoder = load_train_cv(encoder, cache=True, relabel=False)
+train_X, train_y, test_X, test_y, encoder = load_cv_fold(encoder, args.fold)
 print 'Train shape:', train_X.shape, 'Test shape:', test_X.shape
 print 'Train y shape:', train_y.shape, 'Test y shape:', test_y.shape
 print np.amax(train_X)

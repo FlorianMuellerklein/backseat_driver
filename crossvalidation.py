@@ -49,8 +49,8 @@ def load_cv_fold(encoder, fold_idx=0):
     y_train = encoder.fit_transform(y_train).astype('int32')
     y_test = encoder.fit_transform(y_test).astype('int32')
 
-    X_train = X_train.transpose(3, 2, 0, 1) #/ 255.
-    X_test = X_test.transpose(3, 2, 0, 1) #/ 255.
+    X_train = X_train.transpose(3, 2, 0, 1) / 255.
+    X_test = X_test.transpose(3, 2, 0, 1) / 255.
 
     X_train, y_train = shuffle(X_train, y_train)
     
@@ -154,21 +154,47 @@ def create_cv_cache(args):
     y_data = np.empty(total_files, dtype=np.float32)
 
     print('Read training images')
+    
+    count = 0
     for j in range(10):
         print('Load folder c{}'.format(j))
         path = os.path.join(IMG_FOLDER, 'train', 'c' + str(j), '*.jpg')
         files = sorted(glob.glob(path))
+        
+        
         for idx, fl in enumerate(files):
             if idx%100 == 0:
                 print('%d of %d'%(idx, len(files)))
                 
             img = imread(fl)
-            X_data[..., idx] = transform.resize(img, output_shape=(PIXELS, PIXELS, channels), preserve_range=True)
-            y_data[idx] = j
+            X_data[..., count] = transform.resize(img, output_shape=(PIXELS, PIXELS, channels), preserve_range=True)
+            y_data[count] = j
+            
+            count += 1
+                        
             
     np.save('data/cache/X_data_%d.npy'%(PIXELS), X_data)
     np.save('data/cache/y_data_%d.npy'%(PIXELS), y_data)
         
+def get_label(fl): 
+    return int(fl.split(os.sep)[-2][1:])
+
+def get_distribution():
+    unique_drivers, driver_indices, filenames = get_driver_indices()
+    counts = {}
+
+    for driver in unique_drivers:
+        np_list = driver_indices[driver]
+        for filename in filenames[np_list].tolist():
+            if driver not in counts:
+                counts[driver] = {k:0 for k in range(10)}
+                
+            label = get_label(filename)
+            counts[driver][label] += 1
+            
+    return counts
+            
+            
 if __name__ == '__main__':    
     #import ipdb; ipdb.set_trace()
     parser = argparse.ArgumentParser()

@@ -13,7 +13,7 @@ from lasagne.nonlinearities import softmax
 
 from sklearn.preprocessing import LabelEncoder
 
-from models import vgg16, ResNet_Orig, ResNet_FullPre, ResNet_BttlNck_FullPre, ResNet_FullPre_ELU
+from models import vgg16, ResNet_Orig, ResNet_FullPre, ResNet_BttlNck_FullPre, ResNet_FullPre_ELU, ResNet_Orig_ELU
 from utils import load_train_cv, batch_iterator_train, batch_iterator_valid, batch_iterator_train_crop_flip_color
 
 from matplotlib import pyplot
@@ -78,7 +78,7 @@ encoder = LabelEncoder()
 train_X, train_y, test_X, test_y, encoder = load_train_cv(encoder, cache=True, relabel=False)
 print 'Train shape:', train_X.shape, 'Test shape:', test_X.shape
 print 'Train y shape:', train_y.shape, 'Test y shape:', test_y.shape
-print np.amax(train_X)
+print np.amax(train_X), np.amin(train_X), np.mean(train_X)
 
 # loop over training functions for however many iterations, print information while training
 train_eval = []
@@ -115,7 +115,7 @@ except KeyboardInterrupt:
 print "Best Valid Loss:", best_vl
 
 # save weights
-f = gzip.open('data/weights/resnet45_fullpre_128.pklz', 'wb')
+f = gzip.open('data/weights/resnet42_orig_128_fc.pklz', 'wb')
 pickle.dump(best_params, f)
 f.close()
 
@@ -134,6 +134,6 @@ pyplot.ylabel('Valid Acc (%)')
 pyplot.grid()
 pyplot.plot(valid_acc, label='Valid classification accuracy (%)', color='#ED5724')
 pyplot.legend(loc=1)
-pyplot.savefig('plots/resnet45_fullpre_128.png')
+pyplot.savefig('plots/resnet42_orig_128_fc.png')
 pyplot.clf()
 #pyplot.show()

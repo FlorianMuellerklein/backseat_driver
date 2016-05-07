@@ -22,12 +22,12 @@ from skimage.io import imshow, imsave, imread
 from skimage.util import crop
 from skimage import transform, filters, exposure
 
-from models import vgg16, ResNet_Orig, ResNet_FullPre, ResNet_BttlNck_FullPre, blvc_googlenet, inception_v3
+from models import ResNet_FullPre, ResNet_BttlNck_FullPre, blvc_googlenet, inception_v3, ResNet_Orig_ELU
 from utils import load_test, batch_iterator_train, batch_iterator_valid
 
 # testing params
 BATCHSIZE = 32
-PIXELS = 96
+PIXELS = 128
 imageSize = PIXELS * PIXELS
 num_features = imageSize * 3
 
@@ -53,9 +53,11 @@ Load data and make predictions
 '''
 # load data
 X_test, X_test_id = load_test(cache=True)
+print 'Test shape:', X_test.shape
+print np.amax(X_test), np.amin(X_test), np.mean(X_test)
 
 # load network weights
-f = gzip.open('data/weights/resnet45_fullpre_more_L2.pklz', 'rb')
+f = gzip.open('data/weights/resnet42_orig_128_fc.pklz', 'rb')
 all_params = pickle.load(f)
 f.close()
 helper.set_all_param_values(output_layer, all_params)
@@ -72,7 +74,7 @@ print predictions.shape
 '''
 #Test Time Augmentations
 
-PAD_CROP = 6
+PAD_CROP = 8
 PAD_PIXELS = PIXELS + (PAD_CROP * 2)
 imageSize = PIXELS * PIXELS
 num_features = imageSize * 3
@@ -135,7 +137,7 @@ def create_submission(predictions, test_id):
     if not os.path.isdir('subm'):
         os.mkdir('subm')
     suffix = str(now.strftime("%Y-%m-%d-%H-%M"))
-    sub_file = os.path.join('subm', 'resnet45_more_L2.csv')
+    sub_file = os.path.join('subm', 'resnet42_leaky.csv')
     result1.to_csv(sub_file, index=False)
 
 create_submission(predictions, X_test_id)

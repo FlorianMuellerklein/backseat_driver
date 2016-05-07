@@ -12,13 +12,13 @@ from sklearn.manifold import TSNE
 from matplotlib import pyplot
 from skimage.io import imshow, imsave, imread
 from skimage.util import crop
-from skimage import transform, filters, exposure
+from skimage import transform, filters, exposure, img_as_ubyte
 
 import theano
 from theano import tensor as T
 
-PIXELS = 64
-PAD_CROP = 8
+PIXELS = 128
+PAD_CROP = 16
 PAD_PIXELS = PIXELS + (PAD_CROP * 2)
 imageSize = PIXELS * PIXELS
 num_features = imageSize * 3
@@ -27,11 +27,58 @@ tsne = TSNE(verbose=1)
 
 def load_train_cv(encoder, cache=False, relabel=False):
     if cache:
-        X_train = np.load('data/cache/X_train_small.npy')
+        X_train = np.load('data/cache/X_train_128_f32.npy')
         if relabel:
-            y_train = np.load('data/cache/y_train_small_relabel.npy')
+            y_train = np.load('data/cache/y_train_128_f32_relabel.npy')
         else:
-            y_train = np.load('data/cache/y_train_small.npy')
+            y_train = np.load('data/cache/y_train_128_f32.npy')
+    else:
+        X_train = []
+        y_train = []
+        print('Read train images')
+        for j in range(10):
+            print('Load folder c{}'.format(j))
+            path = os.path.join('data', 'imgs', 'train', 'c' + str(j), '*.jpg')
+            files = glob.glob(path)
+            for fl in files:
+                print fl
+                img = imread(fl)
+                img = transform.resize(img, output_shape=(PIXELS, PIXELS, 3), preserve_range=True)
+                img = img.transpose(2, 0, 1)
+                img = np.reshape(img, (1, num_features))
+                X_train.append(img)
+                y_train.append(j)
+
+        X_train = np.array(X_train, dtype='float32')
+        y_train = np.array(y_train)
+
+        np.save('data/cache/X_train_128_f32.npy', X_train)
+        np.save('data/cache/y_train_128_f32.npy', y_train)
+
+    y_train = encoder.fit_transform(y_train).astype('int32')
+
+    X_train, y_train = shuffle(X_train, y_train)
+
+    X_train, X_test, y_train, y_test = train_test_split(X_train, y_train, test_size=0.1)
+
+    X_train = X_train.reshape(X_train.shape[0], 3, PIXELS, PIXELS)
+    X_test = X_test.reshape(X_test.shape[0], 3, PIXELS, PIXELS)
+
+    # subtract per-pixel mean
+    pixel_mean = np.mean(X_train, axis=0)
+    #np.save('data/pixel_mean.npy', pixel_mean)
+    X_train -= pixel_mean
+    X_test -= pixel_mean
+
+    return X_train, y_train, X_test, y_test, encoder
+
+def load_train(encoder, cache=False, relabel=False):
+    if cache:
+        X_train = np.load('data/cache/X_train_128_f32.npy')
+        if relabel:
+            y_train = np.load('data/cache/y_train_128_f32_relabel.npy')
+        else:
+            y_train = np.load('data/cache/y_train_128_f32.npy')
     else:
         X_train = []
         y_train = []
@@ -43,63 +90,59 @@ def load_train_cv(encoder, cache=False, relabel=False):
             for fl in files:
                 print(fl)
                 img = imread(fl)
-                img = transform.resize(img, output_shape=(PIXELS, PIXELS, 3))
+                img = transform.resize(img, output_shape=(PIXELS, PIXELS, 3), preserve_range=True)
                 img = img.transpose(2, 0, 1)
                 img = np.reshape(img, (1, num_features))
                 X_train.append(img)
                 y_train.append(j)
 
-        X_train = np.array(X_train)
+        X_train = np.array(X_train, dtype='float32')
         y_train = np.array(y_train)
 
-        np.save('data/cache/X_train_small.npy', X_train)
-        np.save('data/cache/y_train_small.npy', y_train)
-
-        plot_sample(X_train[0])
+        np.save('data/cache/X_train_128_f32.npy', X_train)
+        np.save('data/cache/y_train_128_f32.npy', y_train)
 
     y_train = encoder.fit_transform(y_train).astype('int32')
 
-    X_train, y_train = shuffle(X_train, y_train)
+    X_train = X_train.reshape(X_train.shape[0], 3, PIXELS, PIXELS)
 
-    X_train, X_test, y_train, y_test = train_test_split(X_train, y_train, test_size=0.1)
+    # subtract pixel mean
+    pixel_mean = np.load('data/pixel_mean.npy')
+    X_train -= pixel_mean
 
-    X_train = X_train.reshape(X_train.shape[0], 3, PIXELS, PIXELS).astype('float32') #/ 255.
-    X_test = X_test.reshape(X_test.shape[0], 3, PIXELS, PIXELS).astype('float32') #/ 255.
+    return X_train, y_train, encoder
 
-    return X_train, y_train, X_test, y_test, encoder
-
-def load_test(cache=False):
+def load_test(cache=False, size=PIXELS):
     if cache:
-        X_test = np.load('data/cache/X_test_small.npy')
-        X_test_id = np.load('data/cache/X_test_id_small.npy')
+        X_test = np.load('data/cache/X_test_128_f32.npy')
+        X_test_id = np.load('data/cache/X_test_id_128_f32.npy')
     else:
         print('Read test images')
         path = os.path.join('data', 'imgs', 'test', '*.jpg')
         files = glob.glob(path)
         X_test = []
         X_test_id = []
-        total = 0
-        thr = math.floor(len(files)/10)
         for fl in files:
             print(fl)
             flbase = os.path.basename(fl)
             img = imread(fl)
-            img = transform.resize(img, output_shape=(PIXELS, PIXELS, 3))
+            img = transform.resize(img, output_shape=(PIXELS, PIXELS, 3), preserve_range=True)
             img = img.transpose(2, 0, 1)
             img = np.reshape(img, (1, num_features))
             X_test.append(img)
             X_test_id.append(flbase)
-            total += 1
-            if total%thr == 0:
-                print('Read {} images from {}'.format(total, len(files)))
 
-        X_test = np.array(X_test)
+        X_test = np.array(X_test, dtype='float32')
         X_test_id = np.array(X_test_id)
 
-        np.save('data/cache/X_test_small.npy', X_test)
-        np.save('data/cache/X_test_id_small.npy', X_test_id)
+        np.save('data/cache/X_test_128_f32.npy', X_test)
+        np.save('data/cache/X_test_id_128_f32.npy', X_test_id)
 
-    X_test = X_test.reshape(X_test.shape[0], 3, PIXELS, PIXELS).astype('float32')
+    X_test = X_test.reshape(X_test.shape[0], 3, PIXELS, PIXELS)
+
+    # subtract pixel mean
+    pixel_mean = np.load('data/pixel_mean.npy')
+    X_test -= pixel_mean
 
     return X_test, X_test_id
 
@@ -133,7 +176,7 @@ def batch_iterator_train_crop_flip_color(data, y, batchsize, train_fn):
         r_intensity = random.randint(0,1)
         g_intensity = random.randint(0,1)
         b_intensity = random.randint(0,1)
-        intensity_scaler = random.randint(-25, 25) / 255.
+        intensity_scaler = random.randint(-25, 25)
 
         # pad and crop settings
         trans_1 = random.randint(0, (PAD_CROP*2))
@@ -259,6 +302,28 @@ def batch_iterator_train(data, y, batchsize, train_fn, leftright=True):
 
         # fit model on each batch
         loss.append(train_fn(X_batch_aug, y_batch))
+
+    return np.mean(loss)
+
+def batch_iterator_train_noaug(data, y, batchsize, train_fn):
+    '''
+    Data augmentation batch iterator for feeding images into CNN.
+    This example will randomly rotate all images in a given batch between -30 and 30 degrees
+    and to random translations between -24 and 24 pixels in all directions.
+    Random zooms between 1 and 1.3.
+    Random shearing between -10 and 10 degrees.
+    '''
+    n_samples = data.shape[0]
+    data, y = shuffle(data, y)
+    loss = []
+    acc_train = 0.
+    for i in range((n_samples + batchsize - 1) // batchsize):
+        sl = slice(i * batchsize, (i + 1) * batchsize)
+        X_batch = data[sl]
+        y_batch = y[sl]
+
+        # fit model on each batch
+        loss.append(train_fn(X_batch, y_batch))
 
     return np.mean(loss)
 

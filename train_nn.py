@@ -21,7 +21,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 import argparsing
-args = argparsing.parse_args()
+args, unknown_args = argparsing.parse_args()
 
 # training params
 experiment_label = args.label

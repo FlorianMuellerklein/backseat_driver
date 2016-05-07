@@ -18,7 +18,7 @@ import theano
 from theano import tensor as T
 
 import argparsing
-args = argparsing.parse_args()
+args, unknown_args = argparsing.parse_args()
 
 PIXELS = args.pixels
 
@@ -286,3 +286,4 @@ def batch_iterator_valid(data_test, y_test, batchsize, valid_fn):
     #plot_sample((X_batch_test[0] / np.amax(X_batch_test)))
 
     return np.mean(loss_valid), np.mean(acc_valid)
+

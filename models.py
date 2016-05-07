@@ -13,7 +13,7 @@ from lasagne.layers.dnn import MaxPool2DDNNLayer as PoolLayerDNN
 from lasagne.layers import LocalResponseNormalization2DLayer as LRNLayer
 
 import argparsing
-args = argparsing.parse_args()
+args, unknown_args = argparsing.parse_args()
 
 PIXELS = args.pixels
 

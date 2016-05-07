@@ -26,7 +26,8 @@ from models import vgg16, ResNet_Orig, ResNet_FullPre, ResNet_BttlNck_FullPre, b
 from utils import load_test, batch_iterator_train, batch_iterator_valid
 
 import argparsing
-args = argparsing.parse_args()
+args, unknown_args = argparsing.parse_args()
+
 experiment_label = args.label
 PIXELS = args.pixels
 

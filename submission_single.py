@@ -30,6 +30,7 @@ args, unknown_args = argparsing.parse_args()
 
 experiment_label = args.label
 PIXELS = args.pixels
+BATCHSIZE = args.batchsize
 
 imageSize = PIXELS * PIXELS
 num_features = imageSize * 3

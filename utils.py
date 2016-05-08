@@ -74,7 +74,7 @@ def load_train_cv(encoder, cache=False, relabel=False):
 
 def load_test(cache=False):
     if cache and os.path.isfile('data/cache/X_test_%s.npy'%PIXELS):
-        X_test = np.load('data/cache/X_test_small.npy')
+        X_test = np.load('data/cache/X_test_%d.npy'%PIXELS)
         X_test_id = np.load('data/cache/X_test_id_small.npy')
     else:
         print('Read test images')
@@ -100,7 +100,7 @@ def load_test(cache=False):
         X_test = np.array(X_test)
         X_test_id = np.array(X_test_id)
 
-        np.save('data/cache/X_test_small.npy', X_test)
+        np.save('data/cache/X_test_%d.npy'%PIXELS, X_test)
         np.save('data/cache/X_test_id_small.npy', X_test_id)
 
     X_test = X_test.reshape(X_test.shape[0], 3, PIXELS, PIXELS).astype('float32')

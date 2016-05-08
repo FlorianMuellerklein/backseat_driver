@@ -15,14 +15,21 @@ from sklearn.preprocessing import LabelEncoder
 
 from models import vgg16, ResNet_Orig, ResNet_FullPre, ResNet_BttlNck_FullPre, ResNet_FullPre_ELU, ResNet_Orig_ELU
 from utils import load_train_cv, batch_iterator_train, batch_iterator_valid, batch_iterator_train_crop_flip_color
+from crossvalidation import load_cv_fold
 
 from matplotlib import pyplot
 import warnings
 warnings.filterwarnings("ignore")
 
+import argparsing
+args, unknown_args = argparsing.parse_args()
+
 # training params
-ITERS = 100
-BATCHSIZE = 32
+experiment_label = args.label
+PIXELS = args.pixels
+ITERS = args.epochs
+BATCHSIZE = args.batchsize
+
 LR_SCHEDULE = {
     0: 0.001,
     60: 0.0001
@@ -75,7 +82,8 @@ load training data and start training
 encoder = LabelEncoder()
 
 # load the training and validation data sets
-train_X, train_y, test_X, test_y, encoder = load_train_cv(encoder, cache=True, relabel=False)
+#train_X, train_y, test_X, test_y, encoder = load_train_cv(encoder, cache=True, relabel=False)
+train_X, train_y, test_X, test_y, encoder = load_cv_fold(encoder, args.fold)
 print 'Train shape:', train_X.shape, 'Test shape:', test_X.shape
 print 'Train y shape:', train_y.shape, 'Test y shape:', test_y.shape
 print np.amax(train_X), np.amin(train_X), np.mean(train_X)
@@ -115,7 +123,7 @@ except KeyboardInterrupt:
 print "Best Valid Loss:", best_vl
 
 # save weights
-f = gzip.open('data/weights/resnet42_orig_128_fc.pklz', 'wb')
+f = gzip.open('data/weights/%s.pklz'%experiment_label, 'wb')
 pickle.dump(best_params, f)
 f.close()
 
@@ -134,6 +142,6 @@ pyplot.ylabel('Valid Acc (%)')
 pyplot.grid()
 pyplot.plot(valid_acc, label='Valid classification accuracy (%)', color='#ED5724')
 pyplot.legend(loc=1)
-pyplot.savefig('plots/resnet42_orig_128_fc.png')
+pyplot.savefig('plots/%s.png'%experiment_label)
 pyplot.clf()
 #pyplot.show()

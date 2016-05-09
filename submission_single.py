@@ -57,7 +57,7 @@ print 'Test shape:', X_test.shape
 print np.amax(X_test), np.amin(X_test), np.mean(X_test)
 
 # load network weights
-f = gzip.open('data/weights/resnet42_orig_128_fc.pklz', 'rb')
+f = gzip.open('data/weights/ResNet42_ShearRotationAug_128.pklz', 'rb')
 all_params = pickle.load(f)
 f.close()
 helper.set_all_param_values(output_layer, all_params)
@@ -80,7 +80,7 @@ imageSize = PIXELS * PIXELS
 num_features = imageSize * 3
 
 tta_iter = 1
-for _ in range(5):
+for _ in range(15):
     predictions_tta = []
     for i in range((X_test.shape[0] + BATCHSIZE - 1) // BATCHSIZE):
         sl = slice(i * BATCHSIZE, (i + 1) * BATCHSIZE)
@@ -94,6 +94,14 @@ for _ in range(5):
         crop_y1 = trans_2
         crop_y2 = (PIXELS + trans_2)
 
+        # brightness settings
+        bright = random.uniform(0.95,1.05)
+
+        r_intensity = random.randint(0,1)
+        g_intensity = random.randint(0,1)
+        b_intensity = random.randint(0,1)
+        intensity_scaler = random.randint(-5, 5)
+
         # set empty copy to hold augmented images so that we don't overwrite
         X_batch_aug = np.copy(X_batch)
 
@@ -105,6 +113,15 @@ for _ in range(5):
                 img_pad = np.pad(X_batch_aug[j,k], pad_width=((PAD_CROP,PAD_CROP), (PAD_CROP,PAD_CROP)), mode='constant')
                 X_batch_aug[j,k] = img_pad[crop_x1:crop_x2, crop_y1:crop_y2]
 
+                # adjust brightness
+                X_batch_aug[j,k] = X_batch_aug[j,k] * bright
+
+            if r_intensity == 1:
+                X_batch_aug[j][0] += intensity_scaler
+            if g_intensity == 1:
+                X_batch_aug[j][1] += intensity_scaler
+            if b_intensity == 1:
+                X_batch_aug[j][2] += intensity_scaler
 
         # print statements for debugging post augmentation
         #img_max =  np.amax(X_batch_aug)
@@ -124,8 +141,18 @@ tta_sub_2 = np.load('data/tta_temp/predictions_tta_2.npy')
 tta_sub_3 = np.load('data/tta_temp/predictions_tta_3.npy')
 tta_sub_4 = np.load('data/tta_temp/predictions_tta_4.npy')
 tta_sub_5 = np.load('data/tta_temp/predictions_tta_5.npy')
+tta_sub_6 = np.load('data/tta_temp/predictions_tta_6.npy')
+tta_sub_7 = np.load('data/tta_temp/predictions_tta_7.npy')
+tta_sub_8 = np.load('data/tta_temp/predictions_tta_8.npy')
+tta_sub_9 = np.load('data/tta_temp/predictions_tta_9.npy')
+tta_sub_10 = np.load('data/tta_temp/predictions_tta_10.npy')
+tta_sub_11 = np.load('data/tta_temp/predictions_tta_11.npy')
+tta_sub_12 = np.load('data/tta_temp/predictions_tta_12.npy')
+tta_sub_13 = np.load('data/tta_temp/predictions_tta_13.npy')
+tta_sub_14 = np.load('data/tta_temp/predictions_tta_14.npy')
+tta_sub_15 = np.load('data/tta_temp/predictions_tta_15.npy')
 
-predictions = (tta_sub_1 + tta_sub_2 + tta_sub_3 + tta_sub_4 + tta_sub_5) / 5.0
+predictions = (tta_sub_1 + tta_sub_2 + tta_sub_3 + tta_sub_4 + tta_sub_5 + tta_sub_6 + tta_sub_7 + tta_sub_8 + tta_sub_9 + tta_sub_10 + tta_sub_11 + tta_sub_12 + tta_sub_13 + tta_sub_14 + tta_sub_15) / 15.0
 
 '''
 Make submission file
@@ -137,7 +164,7 @@ def create_submission(predictions, test_id):
     if not os.path.isdir('subm'):
         os.mkdir('subm')
     suffix = str(now.strftime("%Y-%m-%d-%H-%M"))
-    sub_file = os.path.join('subm', 'resnet42_leaky.csv')
+    sub_file = os.path.join('subm', 'resnet42_ShearRotationAug.csv')
     result1.to_csv(sub_file, index=False)
 
 create_submission(predictions, X_test_id)

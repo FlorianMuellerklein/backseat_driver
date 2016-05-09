@@ -26,10 +26,19 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * Single model submission score - 1.03804
 * Ensemble submission score - 0.38794
 
-### Crop Pad Color augmentation
-* Pad images with 16 PIXELS
+### Current Train Augmentation
+* Pad images with 16 pixels
 * Random crops of original image size
-* random color intensity for each channel
+* Random color intensity for each channel -15,15 (uniform)
+* Random rotations between -15,15 degrees (uniform)
+* Random shear between -5,5 degrees (uniform)
+* Random image brightness aug 90-110% (uniform)
+
+### Current Test Augmentation
+* Pad images with 8 pixels
+* Random crops of original image size
+* Random color intensity for each channel -5,5 (uniform)
+* Random image brightness aug 95-105% (uniform)
 
 ### Old augmentation
 * rotation - (-15,15)
@@ -40,6 +49,20 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * RGB intensity - (-25,25)
 
 ## Things that have worked well
+
+### ResNet-42 More train and test aug (best single model so far)
+* Initial filter num - 16
+* FullPreActivation
+* Batch size - 32
+* L2 regularization - 0.0001 (same as paper)
+* ADAM for 100 epoch - lr_schedule = {0:0.001, 60:0.0001}
+* Heavy Train Augmentations
+* Trans, color, brightness TTA
+* Mean centered image scaling
+* Projection option
+* Individual (new local cv) accuracy - 89.9%
+* Local CV loss - 0.35086
+* Submission score - 0.43872
 
 ### ResNet-42 (Bug Free)
 * Initial filter num - 16

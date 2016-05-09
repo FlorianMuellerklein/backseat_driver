@@ -179,7 +179,7 @@ def batch_iterator_train_crop_flip_color(data, y, batchsize, train_fn):
         r_intensity = random.randint(0,1)
         g_intensity = random.randint(0,1)
         b_intensity = random.randint(0,1)
-        intensity_scaler = random.randint(-25, 25)
+        intensity_scaler = random.randint(-15, 15)
 
         # pad and crop settings
         trans_1 = random.randint(0, (PAD_CROP*2))
@@ -189,8 +189,29 @@ def batch_iterator_train_crop_flip_color(data, y, batchsize, train_fn):
         crop_y1 = trans_2
         crop_y2 = (PIXELS + trans_2)
 
+        # shearing
+        shear_deg = random.uniform(-5,5)
+
+        # random rotations betweein -15 and 15 degrees
+        dorotate = random.randint(-15,15)
+
+        # brightness settings
+        bright = random.uniform(0.9,1.1)
+
         # flip left-right choice
-        flip_lr = random.randint(0,1)
+        #flip_lr = random.randint(0,1)
+
+        # set the transform parameters for skimage.transform.warp
+        # have to shift to center and then shift back after transformation otherwise
+        # rotations will make image go out of frame
+        center_shift   = np.array((PIXELS, PIXELS)) / 2. - 0.5
+        tform_center   = transform.SimilarityTransform(translation=-center_shift)
+        tform_uncenter = transform.SimilarityTransform(translation=center_shift)
+
+        tform_aug = transform.AffineTransform(shear = np.deg2rad(shear_deg),
+                                              rotation = np.deg2rad(dorotate))
+
+        tform = tform_center + tform_aug + tform_uncenter
 
         # set empty copy to hold augmented images so that we don't overwrite
         X_batch_aug = np.copy(X_batch)
@@ -199,20 +220,24 @@ def batch_iterator_train_crop_flip_color(data, y, batchsize, train_fn):
         for j in range(X_batch.shape[0]):
             # for each image channel
             for k in range(X_batch.shape[1]):
+                X_batch_aug[j,k] = fast_warp(X_batch_aug[j,k], tform, output_shape=(PIXELS,PIXELS))
                 # pad and crop images
                 img_pad = np.pad(X_batch_aug[j,k], pad_width=((PAD_CROP,PAD_CROP), (PAD_CROP,PAD_CROP)), mode='constant')
                 X_batch_aug[j,k] = img_pad[crop_x1:crop_x2, crop_y1:crop_y2]
 
+                # adjust brightness
+                X_batch_aug[j,k] = X_batch_aug[j,k] * bright
+
                 # flip left-right if chosen
-                if flip_lr == 1:
-                    X_batch_aug[j,k] = np.fliplr(X_batch_aug[j,k])
+                #if flip_lr == 1:
+                #    X_batch_aug[j,k] = np.fliplr(X_batch_aug[j,k])
 
             if r_intensity == 1:
-                X_batch_aug[j][0] = X_batch_aug[j][0] + intensity_scaler
+                X_batch_aug[j][0] += intensity_scaler
             if g_intensity == 1:
-                X_batch_aug[j][1] = X_batch_aug[j][1] + intensity_scaler
+                X_batch_aug[j][1] += intensity_scaler
             if b_intensity == 1:
-                X_batch_aug[j][2] = X_batch_aug[j][2] + intensity_scaler
+                X_batch_aug[j][2] += intensity_scaler
 
         # fit model on each batch
         loss.append(train_fn(X_batch_aug, y_batch))

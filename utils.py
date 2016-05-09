@@ -158,7 +158,7 @@ def plot_sample(img):
 def fast_warp(img, tf, output_shape, mode='nearest'):
     return transform._warps_cy._warp_fast(img, tf.params, output_shape=output_shape, mode=mode)
 
-def batch_iterator_train_crop_flip_color(data, y, batchsize, train_fn):
+def batch_iterator_train(data, y, batchsize, train_fn):
     '''
     Data augmentation batch iterator for feeding images into CNN.
     Pads each image with 8 pixels on every side.
@@ -244,16 +244,14 @@ def batch_iterator_train_crop_flip_color(data, y, batchsize, train_fn):
 
     return np.mean(loss)
 
-def batch_iterator_train(data, y, batchsize, train_fn, leftright=True):
+def batch_iterator_train_pseudo_label(data, y, pdata, py, batchsize, pbatchsize, train_fn):
     '''
-    Data augmentation batch iterator for feeding images into CNN.
-    This example will randomly rotate all images in a given batch between -30 and 30 degrees
-    and to random translations between -24 and 24 pixels in all directions.
-    Random zooms between 1 and 1.3.
-    Random shearing between -10 and 10 degrees.
+    Batch iterator for training wiht pseudo soft targets
+    For total batch size 32, take 22 from train, and 10 from labeled test
     '''
     n_samples = data.shape[0]
     data, y = shuffle(data, y)
+    pdata, py = shuffle(pdata, py)
     loss = []
     acc_train = 0.
     for i in range((n_samples + batchsize - 1) // batchsize):
@@ -261,25 +259,31 @@ def batch_iterator_train(data, y, batchsize, train_fn, leftright=True):
         X_batch = data[sl]
         y_batch = y[sl]
 
-        # random rotations betweein -8 and 8 degrees
-        dorotate = random.randint(-15,15)
+        # color intensity augmentation
+        r_intensity = random.randint(0,1)
+        g_intensity = random.randint(0,1)
+        b_intensity = random.randint(0,1)
+        intensity_scaler = random.randint(-15, 15)
 
-        # random translations
-        trans_1 = random.randint(-8,8)
-        trans_2 = random.randint(-8,8)
-
-        # random zooms
-        zoom = random.uniform(0.8, 1.2)
+        # pad and crop settings
+        trans_1 = random.randint(0, (PAD_CROP*2))
+        trans_2 = random.randint(0, (PAD_CROP*2))
+        crop_x1 = trans_1
+        crop_x2 = (PIXELS + trans_1)
+        crop_y1 = trans_2
+        crop_y2 = (PIXELS + trans_2)
 
         # shearing
         shear_deg = random.uniform(-5,5)
 
-        # random clips bool
-        if leftright:
-            flip_lr = random.randint(0,1)
-        else:
-            flip_lr = 0
-        #flip_ud = random.randint(0,1)
+        # random rotations betweein -15 and 15 degrees
+        dorotate = random.randint(-15,15)
+
+        # brightness settings
+        bright = random.uniform(0.9,1.1)
+
+        # flip left-right choice
+        #flip_lr = random.randint(0,1)
 
         # set the transform parameters for skimage.transform.warp
         # have to shift to center and then shift back after transformation otherwise
@@ -288,45 +292,49 @@ def batch_iterator_train(data, y, batchsize, train_fn, leftright=True):
         tform_center   = transform.SimilarityTransform(translation=-center_shift)
         tform_uncenter = transform.SimilarityTransform(translation=center_shift)
 
-        tform_aug = transform.AffineTransform(translation = (trans_1, trans_2),
-                                              shear = np.deg2rad(shear_deg),
-                                              scale = (1/zoom, 1/zoom),
+        tform_aug = transform.AffineTransform(shear = np.deg2rad(shear_deg),
                                               rotation = np.deg2rad(dorotate))
 
         tform = tform_center + tform_aug + tform_uncenter
 
-        r_intensity = random.randint(0,1)
-        g_intensity = random.randint(0,1)
-        b_intensity = random.randint(0,1)
-        intensity_scaler = random.randint(-25, 25) / 255.
-
-        # print statements for debugging pre-augmentation
-        #print X_batch.shape
-        #plot_sample(X_batch[0])
-
         # set empty copy to hold augmented images so that we don't overwrite
         X_batch_aug = np.copy(X_batch)
 
-        # for each image in the batch do the augmentationp
+        # for each batch randomly sample 10 points from the labeled testing data
+        indx = random.sample(range(py.shape[0]), 10)
+        X_pdata_batch = pdata[indx[0]]
+        y_pdata_batch = py[indx[0]]
+        for choice in range(1,10):
+            X_pdata_batch = np.vstack((X_pdata_batch, pdata[indx[choice]]))
+            y_pdata_batch = np.vstack((y_pdata_batch, y_pdata_batch[indx[choice]]))
+
+        X_batch_aug = np.vstack((X_batch_aug, X_pdata_batch))
+        y_batch = np.vstack((y_batch, y_pdata_batch))
+
+        X_batch_aug, y_batch = shuffle(X_batch_aug, y_batch)
+
+        # for each image in the batch do the augmentation
         for j in range(X_batch.shape[0]):
             # for each image channel
             for k in range(X_batch.shape[1]):
-                X_batch_aug[j,k] = fast_warp(X_batch[j,k], tform, output_shape=(PIXELS,PIXELS))
-                if flip_lr == 1:
-                    X_batch_aug[j,k] = np.fliplr(X_batch_aug[j,k])
-                #if flip_ud == 1:
-                #    X_batch_aug[j,k] = np.flipud(X_batch_aug[j,k])
+                X_batch_aug[j,k] = fast_warp(X_batch_aug[j,k], tform, output_shape=(PIXELS,PIXELS))
+                # pad and crop images
+                img_pad = np.pad(X_batch_aug[j,k], pad_width=((PAD_CROP,PAD_CROP), (PAD_CROP,PAD_CROP)), mode='constant')
+                X_batch_aug[j,k] = img_pad[crop_x1:crop_x2, crop_y1:crop_y2]
+
+                # adjust brightness
+                X_batch_aug[j,k] = X_batch_aug[j,k] * bright
+
+                # flip left-right if chosen
+                #if flip_lr == 1:
+                #    X_batch_aug[j,k] = np.fliplr(X_batch_aug[j,k])
 
             if r_intensity == 1:
-                X_batch_aug[j][0] = X_batch_aug[j][0] + intensity_scaler
+                X_batch_aug[j][0] += intensity_scaler
             if g_intensity == 1:
-                X_batch_aug[j][1] = X_batch_aug[j][1] + intensity_scaler
+                X_batch_aug[j][1] += intensity_scaler
             if b_intensity == 1:
-                X_batch_aug[j][2] = X_batch_aug[j][2] + intensity_scaler
-
-        # print statements for debugging post augmentation
-        #img_max =  np.amax(X_batch_aug)
-        #plot_sample(X_batch_aug[0] / img_max)
+                X_batch_aug[j][2] += intensity_scaler
 
         # fit model on each batch
         loss.append(train_fn(X_batch_aug, y_batch))
@@ -360,6 +368,7 @@ def batch_iterator_valid(data_test, y_test, batchsize, valid_fn):
     Batch iterator for fine tuning network, no augmentation.
     '''
     n_samples_valid = data_test.shape[0]
+    data_test, y_test = shuffle(data_test, y_test)
     loss_valid = []
     acc_valid = []
     for i in range((n_samples_valid + batchsize - 1) // batchsize):

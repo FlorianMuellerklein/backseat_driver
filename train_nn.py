@@ -14,7 +14,7 @@ from lasagne.nonlinearities import softmax
 from sklearn.preprocessing import LabelEncoder
 
 from models import vgg16, ResNet_Orig, ResNet_FullPre, ResNet_BttlNck_FullPre, ResNet_FullPre_ELU, ResNet_Orig_ELU
-from utils import load_train_cv, batch_iterator_train, batch_iterator_valid, batch_iterator_train_crop_flip_color
+from utils import load_train_cv, batch_iterator_train, batch_iterator_valid
 from crossvalidation import load_cv_fold
 
 from matplotlib import pyplot
@@ -32,7 +32,8 @@ BATCHSIZE = args.batchsize
 
 LR_SCHEDULE = {
     0: 0.001,
-    60: 0.0001
+    60: 0.0001,
+    85: 0.00001
 }
 
 encoder = LabelEncoder()
@@ -42,6 +43,17 @@ Set up all theano functions
 """
 X = T.tensor4('X')
 Y = T.ivector('y')
+#Y = T.fvector('y') # use this for pseudo-label
+
+# custom log loss for pseudo label soft-targets, takes vector as target input instead of label
+def pseudo_log_loss(pred, y, eps=1e-15):
+    '''
+    pred: predictions
+    y: true value, training targets will be one hot, testing-pseudo will be soft-targets
+    '''
+    pred = T.clip(pred, eps, 1 - eps)
+    losses = -T.sum(y * T.log(pred), axis=1)
+    return losses
 
 # set up theano functions to generate output by feeding data through network, any test outputs should be deterministic
 # load model
@@ -101,7 +113,7 @@ try:
         # do the training
         start = time.time()
 
-        train_loss = batch_iterator_train_crop_flip_color(train_X, train_y, BATCHSIZE, train_fn)
+        train_loss = batch_iterator_train(train_X, train_y, BATCHSIZE, train_fn)
         train_eval.append(train_loss)
 
         valid_loss, acc_v = batch_iterator_valid(test_X, test_y, BATCHSIZE, valid_fn)

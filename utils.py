@@ -17,7 +17,10 @@ from skimage import transform, filters, exposure, img_as_ubyte
 import theano
 from theano import tensor as T
 
-PIXELS = 128
+import argparsing
+args, unknown_args = argparsing.parse_args()
+
+PIXELS = args.pixels
 PAD_CROP = 16
 PAD_PIXELS = PIXELS + (PAD_CROP * 2)
 imageSize = PIXELS * PIXELS

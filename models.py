@@ -12,7 +12,11 @@ from lasagne.init import Orthogonal, HeNormal, GlorotNormal
 from lasagne.layers.dnn import MaxPool2DDNNLayer as PoolLayerDNN
 from lasagne.layers import LocalResponseNormalization2DLayer as LRNLayer
 
-PIXELS = 128
+import argparsing
+args, unknown_args = argparsing.parse_args()
+
+PIXELS = args.pixels
+
 imageSize = PIXELS * PIXELS
 num_features = imageSize * 3
 

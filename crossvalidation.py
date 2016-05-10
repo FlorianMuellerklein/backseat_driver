@@ -53,7 +53,7 @@ def load_cv_fold(encoder, fold_idx=0):
     X_test = X_test.transpose(3, 2, 0, 1) #/ 255.
 
     # subtract per-pixel mean
-    pixel_mean = np.load('data/pixel_mean_full.npy')
+    pixel_mean = np.load('data/pixel_mean_full_%d.npy'%PIXELS)
     X_train -= pixel_mean
     X_test -= pixel_mean
 

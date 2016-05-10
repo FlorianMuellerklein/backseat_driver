@@ -70,7 +70,7 @@ def load_train_cv(encoder, cache=False, relabel=False):
     # subtract per-pixel mean
     #pixel_mean = np.mean(X_train, axis=0)
     #np.save('data/pixel_mean.npy', pixel_mean)
-    pixel_mean = np.load('data/pixel_mean_full.npy')
+    pixel_mean = np.load('data/pixel_mean_full_%d.npy'%PIXELS)
     X_train -= pixel_mean
     X_test -= pixel_mean
 
@@ -112,7 +112,7 @@ def load_train(encoder, cache=False, relabel=False):
 
     # subtract pixel mean
     pixel_mean = np.mean(X_train, axis=0)
-    np.save('data/pixel_mean_full.npy', pixel_mean)
+    np.save('data/pixel_mean_full_%d.npy'%PIXELS, pixel_mean)
     #pixel_mean = np.load('data/pixel_mean.npy')
     X_train -= pixel_mean
 
@@ -147,7 +147,7 @@ def load_test(cache=False, size=PIXELS):
     X_test = X_test.reshape(X_test.shape[0], 3, PIXELS, PIXELS)
 
     # subtract pixel mean
-    pixel_mean = np.load('data/pixel_mean_full.npy')
+    pixel_mean = np.load('data/pixel_mean_full_%d.npy'%PIXELS)
     X_test -= pixel_mean
 
     return X_test, X_test_id
@@ -164,7 +164,7 @@ def load_pseudo(cache=True, size=PIXELS):
     X_test = X_test.reshape(X_test.shape[0], 3, PIXELS, PIXELS)
 
     # subtract pixel mean
-    pixel_mean = np.load('data/pixel_mean_full.npy')
+    pixel_mean = np.load('data/pixel_mean_full_%d.npy'%PIXELS)
     X_test -= pixel_mean
 
     return X_test, pseudos

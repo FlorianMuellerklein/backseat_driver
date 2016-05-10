@@ -13,7 +13,7 @@ from lasagne.nonlinearities import softmax
 
 from sklearn.preprocessing import LabelEncoder, LabelBinarizer
 
-from models import vgg16, ResNet_Orig, ResNet_FullPre, ResNet_BttlNck_FullPre, ResNet_FullPre_vleaky, ResNet_Orig_ELU
+from models import vgg16, ResNet_Orig, ResNet_FullPre, ResNet_BttlNck_FullPre, ResNet_Orig_ELU
 from utils import load_train_cv, batch_iterator_train, batch_iterator_valid, load_pseudo, batch_iterator_train_pseudo_label
 from crossvalidation import load_cv_fold
 
@@ -58,7 +58,7 @@ def pseudo_log_loss(pred, y, eps=1e-15):
 
 # set up theano functions to generate output by feeding data through network, any test outputs should be deterministic
 # load model
-output_layer = ResNet_FullPre_vleaky(X, n=5)
+output_layer = ResNet_FullPre(X, n=5)
 
 # create outputs
 output_train = lasagne.layers.get_output(output_layer)

@@ -15,6 +15,6 @@ def parse_args():
     parser.add_argument('--fold', type=int, default=0)
 
     args, unknown_args = parser.parse_known_args()
-    args.label += '_%d'%args.pixels
+    args.label += '_%d_fold%02d'%(args.pixels, args.fold)
 
     return args, unknown_args

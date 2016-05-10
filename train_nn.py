@@ -11,10 +11,10 @@ from lasagne.updates import nesterov_momentum, adam
 from lasagne.layers import helper, DenseLayer
 from lasagne.nonlinearities import softmax
 
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, LabelBinarizer
 
-from models import vgg16, ResNet_Orig, ResNet_FullPre, ResNet_BttlNck_FullPre, ResNet_FullPre_ELU, ResNet_Orig_ELU
-from utils import load_train_cv, batch_iterator_train, batch_iterator_valid
+from models import vgg16, ResNet_Orig, ResNet_FullPre, ResNet_BttlNck_FullPre, ResNet_FullPre_vleaky, ResNet_Orig_ELU
+from utils import load_train_cv, batch_iterator_train, batch_iterator_valid, load_pseudo, batch_iterator_train_pseudo_label
 from crossvalidation import load_cv_fold
 
 from matplotlib import pyplot
@@ -31,12 +31,13 @@ ITERS = args.epochs
 BATCHSIZE = args.batchsize
 
 LR_SCHEDULE = {
-    0: 0.001,
-    60: 0.0001,
-    85: 0.00001
+    0: 0.01,
+    60: 0.001,
+    85: 0.0001
 }
 
 encoder = LabelEncoder()
+#encoder = LabelBinarizer()
 
 """
 Set up all theano functions
@@ -57,7 +58,7 @@ def pseudo_log_loss(pred, y, eps=1e-15):
 
 # set up theano functions to generate output by feeding data through network, any test outputs should be deterministic
 # load model
-output_layer = ResNet_FullPre(X, n=5)
+output_layer = ResNet_FullPre_vleaky(X, n=5)
 
 # create outputs
 output_train = lasagne.layers.get_output(output_layer)
@@ -65,6 +66,7 @@ output_test = lasagne.layers.get_output(output_layer, deterministic=True)
 
 # set up the loss that we aim to minimize when using cat cross entropy our Y should be ints not one-hot
 loss = lasagne.objectives.categorical_crossentropy(output_train, Y)
+#loss = pseudo_log_loss(output_train, Y)
 loss = loss.mean()
 
 # if using ResNet use L2 regularization
@@ -74,9 +76,11 @@ loss = loss + l2_penalty
 
 # set up loss functions for validation dataset
 test_loss = lasagne.objectives.categorical_crossentropy(output_test, Y)
+#test_loss = pseudo_log_loss(output_test, Y)
 test_loss = test_loss.mean()
 
 test_acc = T.mean(T.eq(T.argmax(output_test, axis=1), Y), dtype=theano.config.floatX)
+#test_acc = T.mean(T.eq(T.argmax(output_test, axis=1), T.argmax(Y, axis=1)), dtype=theano.config.floatX)
 
 # get parameters from network and set up sgd with nesterov momentum to update parameters, l_r is shared var so it can be changed
 l_r = theano.shared(np.array(LR_SCHEDULE[0], dtype=theano.config.floatX))
@@ -96,6 +100,7 @@ encoder = LabelEncoder()
 # load the training and validation data sets
 #train_X, train_y, test_X, test_y, encoder = load_train_cv(encoder, cache=True, relabel=False)
 train_X, train_y, test_X, test_y, encoder = load_cv_fold(encoder, args.fold)
+#pseudo_X, pseudo_labels = load_pseudo(cache=True)
 print 'Train shape:', train_X.shape, 'Test shape:', test_X.shape
 print 'Train y shape:', train_y.shape, 'Test y shape:', test_y.shape
 print np.amax(train_X), np.amin(train_X), np.mean(train_X)
@@ -114,6 +119,7 @@ try:
         start = time.time()
 
         train_loss = batch_iterator_train(train_X, train_y, BATCHSIZE, train_fn)
+        #train_loss = batch_iterator_train_pseudo_label(train_X, train_y, pseudo_X, pseudo_labels, BATCHSIZE, train_fn)
         train_eval.append(train_loss)
 
         valid_loss, acc_v = batch_iterator_valid(test_X, test_y, BATCHSIZE, valid_fn)

@@ -149,6 +149,23 @@ def load_test(cache=False, size=PIXELS):
 
     return X_test, X_test_id
 
+def load_pseudo(cache=True, size=PIXELS):
+    if cache:
+        X_test = np.load('data/cache/X_test_128_f32.npy')
+        pseudos = np.load('data/cache/X_test_pseudo.npy')
+    else:
+        # don't know why it wouldn't already be cached
+        # if not add lines 123 to 136
+        print 'what the heck?!'
+
+    X_test = X_test.reshape(X_test.shape[0], 3, PIXELS, PIXELS)
+
+    # subtract pixel mean
+    pixel_mean = np.load('data/pixel_mean_full.npy')
+    X_test -= pixel_mean
+
+    return X_test, pseudos
+
 def plot_sample(img):
     img = img.reshape(PIXELS, PIXELS, 3)
     imshow(img)
@@ -161,10 +178,12 @@ def fast_warp(img, tf, output_shape, mode='nearest'):
 def batch_iterator_train(data, y, batchsize, train_fn):
     '''
     Data augmentation batch iterator for feeding images into CNN.
-    Pads each image with 8 pixels on every side.
+    Pads each image with 16 pixels on every side.
     Randomly crops image with original image shape from padded image. Effectively translating it.
-    Flips image lr with probability 0.5.
     Randomly perturbs intensity of color channels by ~10 percent of intensity.
+    Randomly perturbs brightness of image by 90-110%
+    Random shears -5 to 5 degrees
+    Random rotations -15 to 15 degrees
     '''
     n_samples = data.shape[0]
     data, y = shuffle(data, y)
@@ -179,7 +198,7 @@ def batch_iterator_train(data, y, batchsize, train_fn):
         r_intensity = random.randint(0,1)
         g_intensity = random.randint(0,1)
         b_intensity = random.randint(0,1)
-        intensity_scaler = random.randint(-15, 15)
+        intensity_scaler = random.randint(-20, 20)
 
         # pad and crop settings
         trans_1 = random.randint(0, (PAD_CROP*2))
@@ -344,11 +363,7 @@ def batch_iterator_train_pseudo_label(data, y, pdata, py, batchsize, pbatchsize,
 
 def batch_iterator_train_noaug(data, y, batchsize, train_fn):
     '''
-    Data augmentation batch iterator for feeding images into CNN.
-    This example will randomly rotate all images in a given batch between -30 and 30 degrees
-    and to random translations between -24 and 24 pixels in all directions.
-    Random zooms between 1 and 1.3.
-    Random shearing between -10 and 10 degrees.
+    Batcher iterator for feeding images to CNN, no augmentations
     '''
     n_samples = data.shape[0]
     data, y = shuffle(data, y)
@@ -366,10 +381,9 @@ def batch_iterator_train_noaug(data, y, batchsize, train_fn):
 
 def batch_iterator_valid(data_test, y_test, batchsize, valid_fn):
     '''
-    Batch iterator for fine tuning network, no augmentation.
+    Batch iterator for testing network
     '''
     n_samples_valid = data_test.shape[0]
-    data_test, y_test = shuffle(data_test, y_test)
     loss_valid = []
     acc_valid = []
     for i in range((n_samples_valid + batchsize - 1) // batchsize):

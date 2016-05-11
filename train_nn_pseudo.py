@@ -37,12 +37,24 @@ LR_SCHEDULE = {
 }
 
 encoder = LabelEncoder()
+#encoder = LabelBinarizer()
 
 """
 Set up all theano functions
 """
 X = T.tensor4('X')
 Y = T.ivector('y')
+#Y = T.fvector('y') # use this for pseudo-label
+
+# custom log loss for pseudo label soft-targets, takes vector as target input instead of label
+def pseudo_log_loss(pred, y, eps=1e-15):
+    '''
+    pred: predictions
+    y: true value, training targets will be one hot, testing-pseudo will be soft-targets
+    '''
+    pred = T.clip(pred, eps, 1 - eps)
+    losses = -T.sum(y * T.log(pred), axis=1)
+    return losses
 
 # set up theano functions to generate output by feeding data through network, any test outputs should be deterministic
 # load model
@@ -54,6 +66,7 @@ output_test = lasagne.layers.get_output(output_layer, deterministic=True)
 
 # set up the loss that we aim to minimize when using cat cross entropy our Y should be ints not one-hot
 loss = lasagne.objectives.categorical_crossentropy(output_train, Y)
+#loss = pseudo_log_loss(output_train, Y)
 loss = loss.mean()
 
 # if using ResNet use L2 regularization
@@ -63,9 +76,11 @@ loss = loss + l2_penalty
 
 # set up loss functions for validation dataset
 test_loss = lasagne.objectives.categorical_crossentropy(output_test, Y)
+#test_loss = pseudo_log_loss(output_test, Y)
 test_loss = test_loss.mean()
 
 test_acc = T.mean(T.eq(T.argmax(output_test, axis=1), Y), dtype=theano.config.floatX)
+#test_acc = T.mean(T.eq(T.argmax(output_test, axis=1), T.argmax(Y, axis=1)), dtype=theano.config.floatX)
 
 # get parameters from network and set up sgd with nesterov momentum to update parameters, l_r is shared var so it can be changed
 l_r = theano.shared(np.array(LR_SCHEDULE[0], dtype=theano.config.floatX))
@@ -83,8 +98,9 @@ load training data and start training
 encoder = LabelEncoder()
 
 # load the training and validation data sets
-train_X, train_y, test_X, test_y, encoder = load_train_cv(encoder, cache=True, relabel=False)
-#train_X, train_y, test_X, test_y, encoder = load_cv_fold(encoder, args.fold)
+#train_X, train_y, test_X, test_y, encoder = load_train_cv(encoder, cache=False, relabel=False)
+train_X, train_y, test_X, test_y, encoder = load_cv_fold(encoder, args.fold)
+#pseudo_X, pseudo_labels = load_pseudo(cache=True)
 print 'Train shape:', train_X.shape, 'Test shape:', test_X.shape
 print 'Train y shape:', train_y.shape, 'Test y shape:', test_y.shape
 print np.amax(train_X), np.amin(train_X), np.mean(train_X)

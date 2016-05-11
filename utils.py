@@ -21,7 +21,7 @@ import argparsing
 args, unknown_args = argparsing.parse_args()
 
 PIXELS = args.pixels
-PAD_CROP = 16
+PAD_CROP = int(PIXELS * 0.125)
 PAD_PIXELS = PIXELS + (PAD_CROP * 2)
 imageSize = PIXELS * PIXELS
 num_features = imageSize * 3
@@ -30,11 +30,11 @@ tsne = TSNE(verbose=1)
 
 def load_train_cv(encoder, cache=False, relabel=False):
     if cache:
-        X_train = np.load('data/cache/X_train_128_f32.npy')
+        X_train = np.load('data/cache/X_train_64_f32.npy')
         if relabel:
-            y_train = np.load('data/cache/y_train_128_f32_relabel.npy')
+            y_train = np.load('data/cache/y_train_64_f32_relabel.npy')
         else:
-            y_train = np.load('data/cache/y_train_128_f32.npy')
+            y_train = np.load('data/cache/y_train_64_f32.npy')
     else:
         X_train = []
         y_train = []
@@ -55,8 +55,8 @@ def load_train_cv(encoder, cache=False, relabel=False):
         X_train = np.array(X_train, dtype='float32')
         y_train = np.array(y_train)
 
-        np.save('data/cache/X_train_128_f32.npy', X_train)
-        np.save('data/cache/y_train_128_f32.npy', y_train)
+        np.save('data/cache/X_train_64_f32.npy', X_train)
+        np.save('data/cache/y_train_64_f32.npy', y_train)
 
     y_train = encoder.fit_transform(y_train).astype('int32')
 
@@ -69,7 +69,7 @@ def load_train_cv(encoder, cache=False, relabel=False):
 
     # subtract per-pixel mean
     #pixel_mean = np.mean(X_train, axis=0)
-    #np.save('data/pixel_mean.npy', pixel_mean)
+    #np.save('data/pixel_mean_full_%d.npy'%PIXELS, pixel_mean)
     pixel_mean = np.load('data/pixel_mean_full_%d.npy'%PIXELS)
     X_train -= pixel_mean
     X_test -= pixel_mean
@@ -78,11 +78,11 @@ def load_train_cv(encoder, cache=False, relabel=False):
 
 def load_train(encoder, cache=False, relabel=False):
     if cache:
-        X_train = np.load('data/cache/X_train_128_f32.npy')
+        X_train = np.load('data/cache/X_train_64_f32.npy')
         if relabel:
-            y_train = np.load('data/cache/y_train_128_f32_relabel.npy')
+            y_train = np.load('data/cache/y_train_64_f32_relabel.npy')
         else:
-            y_train = np.load('data/cache/y_train_128_f32.npy')
+            y_train = np.load('data/cache/y_train_64_f32.npy')
     else:
         X_train = []
         y_train = []
@@ -103,8 +103,8 @@ def load_train(encoder, cache=False, relabel=False):
         X_train = np.array(X_train, dtype='float32')
         y_train = np.array(y_train)
 
-        np.save('data/cache/X_train_128_f32.npy', X_train)
-        np.save('data/cache/y_train_128_f32.npy', y_train)
+        np.save('data/cache/X_train_64_f32.npy', X_train)
+        np.save('data/cache/y_train_64_f32.npy', y_train)
 
     y_train = encoder.fit_transform(y_train).astype('int32')
 
@@ -120,8 +120,8 @@ def load_train(encoder, cache=False, relabel=False):
 
 def load_test(cache=False, size=PIXELS):
     if cache:
-        X_test = np.load('data/cache/X_test_128_f32.npy')
-        X_test_id = np.load('data/cache/X_test_id_128_f32.npy')
+        X_test = np.load('data/cache/X_test_64_f32.npy')
+        X_test_id = np.load('data/cache/X_test_id_64_f32.npy')
     else:
         print('Read test images')
         path = os.path.join('data', 'imgs', 'test', '*.jpg')
@@ -141,8 +141,8 @@ def load_test(cache=False, size=PIXELS):
         X_test = np.array(X_test, dtype='float32')
         X_test_id = np.array(X_test_id)
 
-        np.save('data/cache/X_test_128_f32.npy', X_test)
-        np.save('data/cache/X_test_id_128_f32.npy', X_test_id)
+        np.save('data/cache/X_test_64_f32.npy', X_test)
+        np.save('data/cache/X_test_id_64_f32.npy', X_test_id)
 
     X_test = X_test.reshape(X_test.shape[0], 3, PIXELS, PIXELS)
 
@@ -154,7 +154,7 @@ def load_test(cache=False, size=PIXELS):
 
 def load_pseudo(cache=True, size=PIXELS):
     if cache:
-        X_test = np.load('data/cache/X_test_128_f32.npy')
+        X_test = np.load('data/cache/X_test_64_f32.npy')
         pseudos = np.load('data/cache/X_test_pseudo.npy')
     else:
         # don't know why it wouldn't already be cached
@@ -247,9 +247,6 @@ def batch_iterator_train(data, y, batchsize, train_fn):
                 img_pad = np.pad(X_batch_aug[j,k], pad_width=((PAD_CROP,PAD_CROP), (PAD_CROP,PAD_CROP)), mode='constant')
                 X_batch_aug[j,k] = img_pad[crop_x1:crop_x2, crop_y1:crop_y2]
 
-                # adjust brightness
-                X_batch_aug[j,k] = X_batch_aug[j,k] * bright
-
                 # flip left-right if chosen
                 #if flip_lr == 1:
                 #    X_batch_aug[j,k] = np.fliplr(X_batch_aug[j,k])
@@ -261,6 +258,9 @@ def batch_iterator_train(data, y, batchsize, train_fn):
             if b_intensity == 1:
                 X_batch_aug[j][2] += intensity_scaler
 
+            # adjust brightness
+            X_batch_aug[j] = X_batch_aug[j] * bright
+
         # fit model on each batch
         loss.append(train_fn(X_batch_aug, y_batch))
 
@@ -271,22 +271,28 @@ def batch_iterator_train_pseudo_label(data, y, pdata, py, batchsize, pbatchsize,
     Batch iterator for training wiht pseudo soft targets
     For total batch size 32, take 22 from train, and 10 from labeled test
     '''
-    batchsize -= 10
+    batchsize -= pbatchsize
     n_samples = data.shape[0]
     data, y = shuffle(data, y)
     pdata, py = shuffle(pdata, py)
     loss = []
     acc_train = 0.
     for i in range((n_samples + batchsize - 1) // batchsize):
-        sl = slice(i * batchsize, (i + 1) * batchsize)
-        X_batch = data[sl]
-        y_batch = y[sl]
+        sl = slice(i*batchsize, (i+1) * batchsize)
+        psl = slice(i*pbatchsize, (i+1) * pbatchsize)
+        #X_batch = data[sl]
+        #y_batch = y[sl]
+        #pX_batch = pdata[psl]
+        #py_batch = py[psl]
+        X_batch = np.vstack((data[sl], pdata[psl]))
+        y_batch = np.vstack((y[sl], py[psl]))
+        X_batch, y_batch = shuffle(X_batch, y_batch)
 
         # color intensity augmentation
         r_intensity = random.randint(0,1)
         g_intensity = random.randint(0,1)
         b_intensity = random.randint(0,1)
-        intensity_scaler = random.randint(-15, 15)
+        intensity_scaler = random.randint(-20, 20)
 
         # pad and crop settings
         trans_1 = random.randint(0, (PAD_CROP*2))
@@ -323,19 +329,6 @@ def batch_iterator_train_pseudo_label(data, y, pdata, py, batchsize, pbatchsize,
         # set empty copy to hold augmented images so that we don't overwrite
         X_batch_aug = np.copy(X_batch)
 
-        # for each batch randomly sample 10 points from the labeled testing data
-        indx = random.sample(range(py.shape[0]), 10)
-        X_pdata_batch = pdata[indx[0]]
-        y_pdata_batch = py[indx[0]]
-        for choice in range(1,10):
-            X_pdata_batch = np.vstack((X_pdata_batch, pdata[indx[choice]]))
-            y_pdata_batch = np.vstack((y_pdata_batch, y_pdata_batch[indx[choice]]))
-
-        X_batch_aug = np.vstack((X_batch_aug, X_pdata_batch))
-        y_batch = np.vstack((y_batch, y_pdata_batch))
-
-        X_batch_aug, y_batch = shuffle(X_batch_aug, y_batch)
-
         # for each image in the batch do the augmentation
         for j in range(X_batch.shape[0]):
             # for each image channel
@@ -344,9 +337,6 @@ def batch_iterator_train_pseudo_label(data, y, pdata, py, batchsize, pbatchsize,
                 # pad and crop images
                 img_pad = np.pad(X_batch_aug[j,k], pad_width=((PAD_CROP,PAD_CROP), (PAD_CROP,PAD_CROP)), mode='constant')
                 X_batch_aug[j,k] = img_pad[crop_x1:crop_x2, crop_y1:crop_y2]
-
-                # adjust brightness
-                X_batch_aug[j,k] = X_batch_aug[j,k] * bright
 
                 # flip left-right if chosen
                 #if flip_lr == 1:
@@ -358,6 +348,9 @@ def batch_iterator_train_pseudo_label(data, y, pdata, py, batchsize, pbatchsize,
                 X_batch_aug[j][1] += intensity_scaler
             if b_intensity == 1:
                 X_batch_aug[j][2] += intensity_scaler
+
+            # adjust brightness
+            X_batch_aug[j] = X_batch_aug[j] * bright
 
         # fit model on each batch
         loss.append(train_fn(X_batch_aug, y_batch))

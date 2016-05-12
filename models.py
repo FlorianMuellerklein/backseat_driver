@@ -279,25 +279,26 @@ def ResNet_FullPre(input_var=None, n=5):
     # Building the network
     l_in = InputLayer(shape=(None, 3, PIXELS, PIXELS), input_var=input_var)
 
-    # first layer, output is 16 x 128 x 128
-    l = batch_norm(ConvLayer(l_in, num_filters=16, filter_size=(3,3), stride=(1,1), nonlinearity=rectify, pad='same', W=he_norm))
+    # first layer, output is 16 x 32 x 32
+    l = batch_norm(ConvLayer(l_in, num_filters=16, filter_size=(5,5), stride=(1,1), nonlinearity=rectify, pad='same', W=he_norm))
+    l = MaxPool2DLayer(l, pool_size=2)
 
-    # first stack of residual blocks, output is 16 x 128 x 128
+    # first stack of residual blocks, output is 16 x 32 x 32
     l = residual_block(l, first=True)
     for _ in range(1,n):
         l = residual_block(l)
 
-    # second stack of residual blocks, output is 32 x 64 x 64
+    # second stack of residual blocks, output is 32 x 16 x 16
     l = residual_block(l, increase_dim=True)
-    for _ in range(1,n):
+    for _ in range(1,(n+2)):
         l = residual_block(l)
 
-    # third stack of residual blocks, output is 64 x 32 x 32
+    # third stack of residual blocks, output is 64 x 8 x 8
     l = residual_block(l, increase_dim=True)
-    for _ in range(1,n):
+    for _ in range(1,(n+2)):
         l = residual_block(l)
 
-    # third stack of residual blocks, output is 128 x 16 x 16
+    # third stack of residual blocks, output is 128 x 4 x 4
     l = residual_block(l, increase_dim=True)
     for _ in range(1,n):
         l = residual_block(l)
@@ -308,11 +309,15 @@ def ResNet_FullPre(input_var=None, n=5):
     # average pooling
     avg_pool = GlobalPoolLayer(bn_post_relu)
 
+    # FC should be alternative to avg_pool
     #l_hidden1 = batch_norm(DenseLayer(avg_pool, num_units=1024, W=he_norm, nonlinearity=rectify))
     #l_hidden2 = batch_norm(DenseLayer(l_hidden1, num_units=1024, W=he_norm, nonlinearity=rectify))
 
+    # dropout
+    #dropout = DropoutLayer(avg_pool, p=0.5)
+
     # fully connected layer
-    network = DenseLayer(bn_post_relu, num_units=10, W=HeNormal(), nonlinearity=softmax)
+    network = DenseLayer(avg_pool, num_units=10, W=HeNormal(), nonlinearity=softmax)
 
     return network
 

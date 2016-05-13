@@ -52,6 +52,12 @@ def load_cv_fold(encoder, fold_idx=0):
     X_train = X_train.transpose(3, 2, 0, 1) #/ 255.
     X_test = X_test.transpose(3, 2, 0, 1) #/ 255.
 
+    # pixel mean should just be on the training set
+    # but to keep it simple across all folds, just do it on all of the data
+    if not os.path.isfile('data/pixel_mean_full_%d.npy'%PIXELS):
+        pixel_mean = np.mean(np.concatenate([X_train, X_test], axis=0))
+        np.save('data/pixel_mean_full_%d.npy'%PIXELS, pixel_mean)
+
     # subtract per-pixel mean
     pixel_mean = np.load('data/pixel_mean_full_%d.npy'%PIXELS)
     X_train -= pixel_mean
@@ -180,6 +186,13 @@ def create_cv_cache(args):
 
     np.save('data/cache/X_data_%d_f32.npy'%(PIXELS), X_data)
     np.save('data/cache/y_data_%d_f32.npy'%(PIXELS), y_data)
+
+    # pixel mean should just be on the training set
+    # but to keep it simple across all folds, just do it on all of the data
+    if not os.path.isfile('data/pixel_mean_full_%d.npy'%PIXELS):
+        pixel_mean = np.mean(np.concatenate(X_data, axis=0))
+        np.save('data/pixel_mean_full_%d.npy'%PIXELS, pixel_mean)
+
 
 def get_label(fl):
     return int(fl.split(os.sep)[-2][1:])

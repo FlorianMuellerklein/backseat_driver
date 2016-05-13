@@ -119,9 +119,10 @@ def load_train(encoder, cache=False, relabel=False):
     return X_train, y_train, encoder
 
 def load_test(cache=False, size=PIXELS):
-    if cache:
-        X_test = np.load('data/cache/X_test_64_f32.npy')
-        X_test_id = np.load('data/cache/X_test_id_64_f32.npy')
+    filename = 'data/cache/X_test_%d_f32.npy'%PIXELS
+    if cache and os.path.isfile(filename):
+        X_test = np.load(filename)
+        X_test_id = np.load(filename)
     else:
         print('Read test images')
         path = os.path.join('data', 'imgs', 'test', '*.jpg')
@@ -141,8 +142,8 @@ def load_test(cache=False, size=PIXELS):
         X_test = np.array(X_test, dtype='float32')
         X_test_id = np.array(X_test_id)
 
-        np.save('data/cache/X_test_64_f32.npy', X_test)
-        np.save('data/cache/X_test_id_64_f32.npy', X_test_id)
+        np.save(filename, X_test)
+        np.save(filename, X_test_id)
 
     X_test = X_test.reshape(X_test.shape[0], 3, PIXELS, PIXELS)
 

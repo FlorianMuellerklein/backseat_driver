@@ -51,18 +51,40 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 ## Things that have worked well
 
 ### ResNet-42 More train and test aug (best single model so far)
+* 128x128 Image size
 * Initial filter num - 16
+* Initial filter size - 3x3, stride 1
+* No maxpool after first filter
 * FullPreActivation
 * Batch size - 32
 * L2 regularization - 0.0001 (same as paper)
 * ADAM for 100 epoch - lr_schedule = {0:0.001, 60:0.0001}
 * Heavy Train Augmentations
 * Trans, color, brightness TTA
-* Mean centered image scaling
+* Mean-pixel centering
 * Projection option
 * Individual (new local cv) accuracy - 89.9%
 * Local CV loss - 0.35086
 * Submission score - 0.43872
+* Time per epoch - 230 seconds
+
+### ResNet-42
+* 128x128 Image size
+* Initial filter num - 16
+* Initial filter size - 5x5, stride 1
+* Maxpool after initial filter - 2x2
+* FullPreActivation
+* Batch size - 32
+* L2 regularization - 0.0001 (same as paper)
+* ADAM for 100 epoch - lr_schedule = {0:0.001, 60:0.0001, 85:0.00001}
+* Heavy Train Augmentations
+* Trans, color, brightness TTA
+* Mean-pixel centering
+* Projection option
+* Individual (old cv) accuracy - 99.8%
+* Local old CV loss - 0.00548 to 0.00571
+* Submission score - 0.46059
+* Time per epoch - 82 seconds!
 
 ### ResNet-42 (Bug Free)
 * Initial filter num - 16

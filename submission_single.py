@@ -61,8 +61,8 @@ print 'Test shape:', X_test.shape
 print np.amax(X_test), np.amin(X_test), np.mean(X_test)
 
 # load network weights
-#f = gzip.open('data/weights/resnet45_fullpre_more_L2.pklz', 'rb')
-f = gzip.open('data/weights/%s.pklz'%experiment_label, 'rb')
+f = gzip.open('data/weights/ResNet42_5x5_128_fold00.pklz', 'rb')
+#f = gzip.open('data/weights/%s.pklz'%experiment_label, 'rb')
 all_params = pickle.load(f)
 f.close()
 helper.set_all_param_values(output_layer, all_params)
@@ -118,15 +118,15 @@ for _ in range(15):
                 img_pad = np.pad(X_batch_aug[j,k], pad_width=((PAD_CROP,PAD_CROP), (PAD_CROP,PAD_CROP)), mode='constant')
                 X_batch_aug[j,k] = img_pad[crop_x1:crop_x2, crop_y1:crop_y2]
 
-                # adjust brightness
-                X_batch_aug[j,k] = X_batch_aug[j,k] * bright
-
             if r_intensity == 1:
                 X_batch_aug[j][0] += intensity_scaler
             if g_intensity == 1:
                 X_batch_aug[j][1] += intensity_scaler
             if b_intensity == 1:
                 X_batch_aug[j][2] += intensity_scaler
+
+            # adjust brightness
+            X_batch_aug[j] = X_batch_aug[j] * bright
 
         # print statements for debugging post augmentation
         #img_max =  np.amax(X_batch_aug)

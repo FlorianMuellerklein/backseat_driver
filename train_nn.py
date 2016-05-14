@@ -106,7 +106,7 @@ try:
         #train_loss = batch_iterator_train_pseudo_label(train_X, train_y, pseudo_X, pseudo_labels, BATCHSIZE, train_fn)
         train_eval.append(train_loss)
 
-        valid_loss, acc_v = batch_iterator_valid(test_X, test_y, BATCHSIZE, valid_fn)
+        valid_loss, acc_v = batch_iterator_valid(test_X, test_y, 4, valid_fn)
         valid_eval.append(valid_loss)
         valid_acc.append(acc_v)
 
@@ -143,7 +143,7 @@ pyplot.twinx()
 pyplot.ylabel('Valid Acc (%)')
 pyplot.grid()
 pyplot.plot(valid_acc, label='Valid classification accuracy (%)', color='#ED5724')
-pyplot.legend(loc=1)
+pyplot.legend(loc=3)
 pyplot.savefig('plots/%s.png'%experiment_label)
 pyplot.clf()
 #pyplot.show()

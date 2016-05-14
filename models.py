@@ -271,6 +271,11 @@ def ResNet_FullPre(input_var=None, n=5):
             # projection shortcut, as option B in paper
             projection = ConvLayer(l, num_filters=out_num_filters, filter_size=(1,1), stride=(2,2), nonlinearity=None, pad='same', b=None)
             block = ElemwiseSumLayer([conv_2, projection])
+
+            # identity shortcut, as option A in paper
+            #identity = ExpressionLayer(l, lambda X: X[:, :, ::2, ::2], lambda s: (s[0], s[1], s[2]//2, s[3]//2))
+            #padding = PadLayer(identity, [out_num_filters//4,0,0], batch_ndim=1)
+            #block = ElemwiseSumLayer([conv_2, padding])
         else:
             block = ElemwiseSumLayer([conv_2, l])
 
@@ -290,12 +295,12 @@ def ResNet_FullPre(input_var=None, n=5):
 
     # second stack of residual blocks, output is 32 x 16 x 16
     l = residual_block(l, increase_dim=True)
-    for _ in range(1,(n+2)):
+    for _ in range(1,n):
         l = residual_block(l)
 
     # third stack of residual blocks, output is 64 x 8 x 8
     l = residual_block(l, increase_dim=True)
-    for _ in range(1,(n+2)):
+    for _ in range(1,n):
         l = residual_block(l)
 
     # third stack of residual blocks, output is 128 x 4 x 4

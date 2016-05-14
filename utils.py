@@ -30,11 +30,11 @@ tsne = TSNE(verbose=1)
 
 def load_train_cv(encoder, cache=False, relabel=False):
     if cache:
-        X_train = np.load('data/cache/X_train_64_f32.npy')
+        X_train = np.load('data/cache/X_train_%d_f32.npy'%PIXELS)
         if relabel:
-            y_train = np.load('data/cache/y_train_64_f32_relabel.npy')
+            y_train = np.load('data/cache/y_train_%d_f32_relabel.npy'%PIXELS)
         else:
-            y_train = np.load('data/cache/y_train_64_f32.npy')
+            y_train = np.load('data/cache/y_train_%d_f32.npy'%PIXELS)
     else:
         X_train = []
         y_train = []
@@ -55,14 +55,14 @@ def load_train_cv(encoder, cache=False, relabel=False):
         X_train = np.array(X_train, dtype='float32')
         y_train = np.array(y_train)
 
-        np.save('data/cache/X_train_64_f32.npy', X_train)
-        np.save('data/cache/y_train_64_f32.npy', y_train)
+        np.save('data/cache/X_train_%d_f32.npy'%PIXELS, X_train)
+        np.save('data/cache/y_train_%d_f32.npy'%PIXELS, y_train)
 
     y_train = encoder.fit_transform(y_train).astype('int32')
 
     X_train, y_train = shuffle(X_train, y_train)
 
-    X_train, X_test, y_train, y_test = train_test_split(X_train, y_train, test_size=0.1)
+    X_train, X_test, y_train, y_test = train_test_split(X_train, y_train, test_size=0.15)
 
     X_train = X_train.reshape(X_train.shape[0], 3, PIXELS, PIXELS)
     X_test = X_test.reshape(X_test.shape[0], 3, PIXELS, PIXELS)
@@ -78,11 +78,11 @@ def load_train_cv(encoder, cache=False, relabel=False):
 
 def load_train(encoder, cache=False, relabel=False):
     if cache:
-        X_train = np.load('data/cache/X_train_64_f32.npy')
+        X_train = np.load('data/cache/X_train_%d_f32.npy'%PIXELS)
         if relabel:
-            y_train = np.load('data/cache/y_train_64_f32_relabel.npy')
+            y_train = np.load('data/cache/y_train_%d_f32_relabel.npy'%PIXELS)
         else:
-            y_train = np.load('data/cache/y_train_64_f32.npy')
+            y_train = np.load('data/cache/y_train_%d_f32.npy'%PIXELS)
     else:
         X_train = []
         y_train = []
@@ -103,25 +103,25 @@ def load_train(encoder, cache=False, relabel=False):
         X_train = np.array(X_train, dtype='float32')
         y_train = np.array(y_train)
 
-        np.save('data/cache/X_train_64_f32.npy', X_train)
-        np.save('data/cache/y_train_64_f32.npy', y_train)
+        np.save('data/cache/X_train_%d_f32.npy'%PIXELS, X_train)
+        np.save('data/cache/y_train_%d_f32.npy'%PIXELS, y_train)
 
     y_train = encoder.fit_transform(y_train).astype('int32')
 
     X_train = X_train.reshape(X_train.shape[0], 3, PIXELS, PIXELS)
 
     # subtract pixel mean
-    pixel_mean = np.mean(X_train, axis=0)
-    np.save('data/pixel_mean_full_%d.npy'%PIXELS, pixel_mean)
-    #pixel_mean = np.load('data/pixel_mean.npy')
+    #pixel_mean = np.mean(X_train, axis=0)
+    #np.save('data/pixel_mean_full_%d.npy'%PIXELS, pixel_mean)
+    pixel_mean = np.load('data/pixel_mean.npy')
     X_train -= pixel_mean
 
     return X_train, y_train, encoder
 
 def load_test(cache=False, size=PIXELS):
     if cache:
-        X_test = np.load('data/cache/X_test_64_f32.npy')
-        X_test_id = np.load('data/cache/X_test_id_64_f32.npy')
+        X_test = np.load('data/cache/X_test_%d_f32.npy'%PIXELS)
+        X_test_id = np.load('data/cache/X_test_id_%d_f32.npy'%PIXELS)
     else:
         print('Read test images')
         path = os.path.join('data', 'imgs', 'test', '*.jpg')
@@ -141,8 +141,8 @@ def load_test(cache=False, size=PIXELS):
         X_test = np.array(X_test, dtype='float32')
         X_test_id = np.array(X_test_id)
 
-        np.save('data/cache/X_test_64_f32.npy', X_test)
-        np.save('data/cache/X_test_id_64_f32.npy', X_test_id)
+        np.save('data/cache/X_test_%d_f32.npy'%PIXELS, X_test)
+        np.save('data/cache/X_test_id_%d_f32.npy'%PIXELS, X_test_id)
 
     X_test = X_test.reshape(X_test.shape[0], 3, PIXELS, PIXELS)
 
@@ -154,7 +154,7 @@ def load_test(cache=False, size=PIXELS):
 
 def load_pseudo(cache=True, size=PIXELS):
     if cache:
-        X_test = np.load('data/cache/X_test_64_f32.npy')
+        X_test = np.load('data/cache/X_test_%d_f32.npy'%PIXELS)
         pseudos = np.load('data/cache/X_test_pseudo.npy')
     else:
         # don't know why it wouldn't already be cached

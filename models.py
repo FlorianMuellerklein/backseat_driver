@@ -239,7 +239,6 @@ def ResNet_FullPre(input_var=None, n=5):
     '''
     Adapted from https://github.com/Lasagne/Recipes/tree/master/papers/deep_residual_learning.
     Tweaked to be consistent with 'Identity Mappings in Deep Residual Networks', Kaiming He et al. 2016 (https://arxiv.org/abs/1603.05027)
-
     Formula to figure out depth: 8n+2
     '''
     # create a residual learning building block with two stacked 3x3 convlayers as in paper
@@ -284,26 +283,26 @@ def ResNet_FullPre(input_var=None, n=5):
     # Building the network
     l_in = InputLayer(shape=(None, 3, PIXELS, PIXELS), input_var=input_var)
 
-    # first layer, output is 16 x 32 x 32
+    # first layer, output is 16 x 64 x 64
     l = batch_norm(ConvLayer(l_in, num_filters=16, filter_size=(5,5), stride=(1,1), nonlinearity=rectify, pad='same', W=he_norm))
     l = MaxPool2DLayer(l, pool_size=2)
 
-    # first stack of residual blocks, output is 16 x 32 x 32
+    # first stack of residual blocks, output is 16 x 64 x 64
     l = residual_block(l, first=True)
     for _ in range(1,n):
         l = residual_block(l)
 
-    # second stack of residual blocks, output is 32 x 16 x 16
+    # second stack of residual blocks, output is 32 x 32 x 32
     l = residual_block(l, increase_dim=True)
-    for _ in range(1,n):
+    for _ in range(1,(n+2)):
         l = residual_block(l)
 
-    # third stack of residual blocks, output is 64 x 8 x 8
+    # third stack of residual blocks, output is 64 x 16 x 16
     l = residual_block(l, increase_dim=True)
-    for _ in range(1,n):
+    for _ in range(1,(n+2)):
         l = residual_block(l)
 
-    # third stack of residual blocks, output is 128 x 4 x 4
+    # third stack of residual blocks, output is 128 x 8 x 8
     l = residual_block(l, increase_dim=True)
     for _ in range(1,n):
         l = residual_block(l)
@@ -319,10 +318,10 @@ def ResNet_FullPre(input_var=None, n=5):
     #l_hidden2 = batch_norm(DenseLayer(l_hidden1, num_units=1024, W=he_norm, nonlinearity=rectify))
 
     # dropout
-    #dropout = DropoutLayer(avg_pool, p=0.5)
+    dropout = DropoutLayer(avg_pool, p=0.25)
 
     # fully connected layer
-    network = DenseLayer(avg_pool, num_units=10, W=HeNormal(), nonlinearity=softmax)
+    network = DenseLayer(dropout, num_units=10, W=HeNormal(), nonlinearity=softmax)
 
     return network
 
@@ -332,7 +331,6 @@ def ResNet_FullPre_ELU(input_var=None, n=5):
     '''
     Adapted from https://github.com/Lasagne/Recipes/tree/master/papers/deep_residual_learning.
     Tweaked to be consistent with 'Identity Mappings in Deep Residual Networks', Kaiming He et al. 2016 (https://arxiv.org/abs/1603.05027)
-
     Forumala to figure out depth: 8n+2
     '''
     # create a residual learning building block with two stacked 3x3 convlayers as in paper
@@ -413,7 +411,6 @@ def ResNet_BttlNck_FullPre(input_var=None, n=18):
     '''
     Adapted from https://github.com/Lasagne/Recipes/tree/master/papers/deep_residual_learning.
     Tweaked to be consistent with 'Identity Mappings in Deep Residual Networks', Kaiming He et al. 2016 (https://arxiv.org/abs/1603.05027)
-
     Formula to figure out depth: 9n + 2
     '''
     # create a residual learning building block with two stacked 3x3 convlayers as in paper

@@ -12,6 +12,7 @@ from lasagne.layers import helper, DenseLayer
 from lasagne.nonlinearities import softmax
 
 from sklearn.preprocessing import LabelEncoder, LabelBinarizer
+from sklearn.metrics import confusion_matrix
 
 from models import vgg16, ResNet_Orig, ResNet_FullPre, ResNet_BttlNck_FullPre, ResNet_Orig_ELU
 from utils import load_train_cv, batch_iterator_train, batch_iterator_valid, load_pseudo, batch_iterator_train_pseudo_label
@@ -46,11 +47,12 @@ Y = T.ivector('y')
 
 # set up theano functions to generate output by feeding data through network, any test outputs should be deterministic
 # load model
-output_layer = ResNet_FullPre(X, n=5)
+output_layer = ResNet_FullPre(X, n=9)
 
 # create outputs
 output_train = lasagne.layers.get_output(output_layer)
 output_test = lasagne.layers.get_output(output_layer, deterministic=True)
+output_class = T.argmax(output_test, axis=1)
 
 # set up the loss that we aim to minimize when using cat cross entropy our Y should be ints not one-hot
 loss = lasagne.objectives.categorical_crossentropy(output_train, Y)
@@ -58,7 +60,7 @@ loss = loss.mean()
 
 # if using ResNet use L2 regularization
 all_layers = lasagne.layers.get_all_layers(output_layer)
-l2_penalty = lasagne.regularization.regularize_layer_params(all_layers, lasagne.regularization.l2) * 0.0001
+l2_penalty = lasagne.regularization.regularize_layer_params(all_layers, lasagne.regularization.l2) * 0.00001
 loss = loss + l2_penalty
 
 # set up loss functions for validation dataset
@@ -66,6 +68,9 @@ test_loss = lasagne.objectives.categorical_crossentropy(output_test, Y)
 test_loss = test_loss.mean()
 
 test_acc = T.mean(T.eq(T.argmax(output_test, axis=1), Y), dtype=theano.config.floatX)
+
+# prediction function for confusion_matrix
+predict_class = theano.function(inputs=[X], outputs=output_class)
 
 # get parameters from network and set up sgd with nesterov momentum to update parameters, l_r is shared var so it can be changed
 l_r = theano.shared(np.array(LR_SCHEDULE[0], dtype=theano.config.floatX))
@@ -80,7 +85,6 @@ valid_fn = theano.function(inputs=[X,Y], outputs=[test_loss, test_acc])
 '''
 load training data and start training
 '''
-encoder = LabelEncoder()
 
 # load the training and validation data sets
 train_X, train_y, test_X, test_y, encoder = load_train_cv(encoder, cache=True, relabel=False)
@@ -125,7 +129,12 @@ except KeyboardInterrupt:
 print "Best Valid Loss:", best_vl
 
 # save weights
-f = gzip.open('data/weights/%s.pklz'%experiment_label, 'wb')
+f = gzip.open('data/weights/%s_best.pklz'%experiment_label, 'wb')
+pickle.dump(best_params, f)
+f.close()
+
+last_params = helper.get_all_param_values(output_layer)
+f = gzip.open('data/weights/%s_last.pklz'%experiment_label, 'wb')
 pickle.dump(best_params, f)
 f.close()
 
@@ -147,3 +156,31 @@ pyplot.legend(loc=3)
 pyplot.savefig('plots/%s.png'%experiment_label)
 pyplot.clf()
 #pyplot.show()
+
+#make predictions
+TEST_BATCH = 1
+new_labels = []
+for j in range((test_X.shape[0] + TEST_BATCH - 1) // TEST_BATCH):
+    sl = slice(j * TEST_BATCH, (j + 1) * TEST_BATCH)
+    X_batch = test_X[sl]
+    new_labels.extend(predict_class(X_batch))
+
+new_labels = np.array(new_labels)
+print new_labels.shape
+
+labels = [
+    'safe driving',
+    'texting - right',
+    'talking on the phone - right',
+    'texting - left',
+    'talking on the phone - left',
+    'operating the radio',
+    'drinking',
+    'reaching behind',
+    'hair and makeup',
+    'talking to passenger']
+
+pyplot.matshow(confusion_matrix(test_y, new_labels), cmap='Reds', interpolation='none')
+pyplot.yticks(np.arange(10), labels)
+pyplot.xticks(np.arange(10), labels, rotation=90)
+pyplot.savefig('plots/%s_confusion.png'%experiment_label)

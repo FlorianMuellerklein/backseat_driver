@@ -30,33 +30,38 @@ tsne = TSNE(verbose=1)
 
 def load_train_cv(encoder, cache=False, relabel=False):
     if cache:
-        X_train = np.load('data/cache/X_train_%d_f32.npy'%PIXELS)
+        X_train = np.load('data/cache/X_train_%d_f32_clean.npy'%PIXELS)
         if relabel:
             y_train = np.load('data/cache/y_train_%d_f32_relabel.npy'%PIXELS)
         else:
-            y_train = np.load('data/cache/y_train_%d_f32.npy'%PIXELS)
+            y_train = np.load('data/cache/y_train_%d_f32_clean.npy'%PIXELS)
     else:
         X_train = []
         y_train = []
+        X_train_id = []
         print('Read train images')
         for j in range(10):
             print('Load folder c{}'.format(j))
-            path = os.path.join('data', 'imgs', 'train', 'c' + str(j), '*.jpg')
+            path = os.path.join('data', 'imgs', 'train_cleaned', 'c' + str(j), '*.jpg')
             files = glob.glob(path)
             for fl in files:
                 print fl
+                flbase = os.path.basename(fl)
                 img = imread(fl)
                 img = transform.resize(img, output_shape=(PIXELS, PIXELS, 3), preserve_range=True)
                 img = img.transpose(2, 0, 1)
                 img = np.reshape(img, (1, num_features))
                 X_train.append(img)
                 y_train.append(j)
+                X_train_id.append('c' + str(j) + '/' + str(flbase))
 
         X_train = np.array(X_train, dtype='float32')
         y_train = np.array(y_train)
+        X_train_id = np.array(X_train_id)
 
-        np.save('data/cache/X_train_%d_f32.npy'%PIXELS, X_train)
-        np.save('data/cache/y_train_%d_f32.npy'%PIXELS, y_train)
+        np.save('data/cache/X_train_%d_f32_clean.npy'%PIXELS, X_train)
+        np.save('data/cache/y_train_%d_f32_clean.npy'%PIXELS, y_train)
+        np.save('data/cache/X_train_id_%d_f32_clean.npy'%PIXELS, X_train_id)
 
     y_train = encoder.fit_transform(y_train).astype('int32')
 
@@ -119,10 +124,9 @@ def load_train(encoder, cache=False, relabel=False):
     return X_train, y_train, encoder
 
 def load_test(cache=False, size=PIXELS):
-    filename = 'data/cache/X_test_%d_f32.npy'%PIXELS
-    if cache and os.path.isfile(filename):
-        X_test = np.load(filename)
-        X_test_id = np.load(filename)
+    if cache:
+        X_test = np.load('data/cache/X_test_%d_f32.npy'%PIXELS)
+        X_test_id = np.load('data/cache/X_test_id_%d_f32.npy'%PIXELS)
     else:
         print('Read test images')
         path = os.path.join('data', 'imgs', 'test', '*.jpg')
@@ -132,7 +136,7 @@ def load_test(cache=False, size=PIXELS):
         for fl in files:
             print(fl)
             flbase = os.path.basename(fl)
-            img = imread(fl)
+            img = imread(fl, as_grey = True)
             img = transform.resize(img, output_shape=(PIXELS, PIXELS, 3), preserve_range=True)
             img = img.transpose(2, 0, 1)
             img = np.reshape(img, (1, num_features))
@@ -142,8 +146,8 @@ def load_test(cache=False, size=PIXELS):
         X_test = np.array(X_test, dtype='float32')
         X_test_id = np.array(X_test_id)
 
-        np.save(filename, X_test)
-        np.save(filename, X_test_id)
+        np.save('data/cache/X_test_%d_f32.npy'%PIXELS, X_test)
+        np.save('data/cache/X_test_id_%d_f32.npy'%PIXELS, X_test_id)
 
     X_test = X_test.reshape(X_test.shape[0], 3, PIXELS, PIXELS)
 
@@ -156,7 +160,7 @@ def load_test(cache=False, size=PIXELS):
 def load_pseudo(cache=True, size=PIXELS):
     if cache:
         X_test = np.load('data/cache/X_test_%d_f32.npy'%PIXELS)
-        pseudos = np.load('data/cache/X_test_pseudo.npy')
+        pseudos = np.load('data/cache/pseudo_labels_test.npy')
     else:
         # don't know why it wouldn't already be cached
         # if not add lines 123 to 136
@@ -176,10 +180,10 @@ def plot_sample(img):
     #img = img / 290.
     pyplot.show(block=True)
 
-def fast_warp(img, tf, output_shape, mode='nearest'):
+def fast_warp(img, tf, output_shape, mode='constant', cval=0.0):
     return transform._warps_cy._warp_fast(img, tf.params, output_shape=output_shape, mode=mode)
 
-def batch_iterator_train(data, y, batchsize, train_fn):
+def batch_iterator_train(data, y, BATCHSIZE, train_fn):
     '''
     Data augmentation batch iterator for feeding images into CNN.
     Pads each image with 16 pixels on every side.
@@ -190,13 +194,14 @@ def batch_iterator_train(data, y, batchsize, train_fn):
     Random rotations -15 to 15 degrees
     '''
     n_samples = data.shape[0]
-    data, y = shuffle(data, y)
+    #data, y = shuffle(data, y)
+    indx = np.random.permutation(xrange(n_samples))
     loss = []
     acc_train = 0.
-    for i in range((n_samples + batchsize - 1) // batchsize):
-        sl = slice(i * batchsize, (i + 1) * batchsize)
-        X_batch = data[sl]
-        y_batch = y[sl]
+    for i in range((n_samples + BATCHSIZE - 1) // BATCHSIZE):
+        sl = slice(i * BATCHSIZE, (i + 1) * BATCHSIZE)
+        X_batch = data[indx[sl]]
+        y_batch = y[indx[sl]]
 
         # color intensity augmentation
         r_intensity = random.randint(0,1)
@@ -212,6 +217,9 @@ def batch_iterator_train(data, y, batchsize, train_fn):
         crop_y1 = trans_2
         crop_y2 = (PIXELS + trans_2)
 
+        # random zooms
+        zoom = random.uniform(0.8, 1.2)
+
         # shearing
         shear_deg = random.uniform(-5,5)
 
@@ -224,6 +232,9 @@ def batch_iterator_train(data, y, batchsize, train_fn):
         # flip left-right choice
         #flip_lr = random.randint(0,1)
 
+        # flip up-down choice
+        #flip_ud = random.randint(0,1)
+
         # set the transform parameters for skimage.transform.warp
         # have to shift to center and then shift back after transformation otherwise
         # rotations will make image go out of frame
@@ -232,6 +243,7 @@ def batch_iterator_train(data, y, batchsize, train_fn):
         tform_uncenter = transform.SimilarityTransform(translation=center_shift)
 
         tform_aug = transform.AffineTransform(shear = np.deg2rad(shear_deg),
+                                              scale = (1/zoom, 1/zoom),
                                               rotation = np.deg2rad(dorotate))
 
         tform = tform_center + tform_aug + tform_uncenter
@@ -252,6 +264,10 @@ def batch_iterator_train(data, y, batchsize, train_fn):
                 #if flip_lr == 1:
                 #    X_batch_aug[j,k] = np.fliplr(X_batch_aug[j,k])
 
+                # flip left-right if chosen
+                #if flip_ud == 1:
+                #    X_batch_aug[j,k] = np.flipud(X_batch_aug[j,k])
+
             if r_intensity == 1:
                 X_batch_aug[j][0] += intensity_scaler
             if g_intensity == 1:
@@ -267,26 +283,28 @@ def batch_iterator_train(data, y, batchsize, train_fn):
 
     return np.mean(loss)
 
-def batch_iterator_train_pseudo_label(data, y, pdata, py, batchsize, pbatchsize, train_fn):
+def batch_iterator_train_pseudo_label(data, y, pdata, py, BATCHSIZE, pBATCHSIZE, train_fn):
     '''
     Batch iterator for training wiht pseudo soft targets
     For total batch size 32, take 22 from train, and 10 from labeled test
     '''
     batchsize -= pbatchsize
     n_samples = data.shape[0]
-    data, y = shuffle(data, y)
-    pdata, py = shuffle(pdata, py)
+    #data, y = shuffle(data, y)
+    train_indx = np.random.permutation(xrange(n_samples))
+    #pdata, py = shuffle(pdata, py)
+    test_indx = np.random.permutation(xrange(pdata.shape[0]))
     loss = []
     acc_train = 0.
-    for i in range((n_samples + batchsize - 1) // batchsize):
-        sl = slice(i*batchsize, (i+1) * batchsize)
-        psl = slice(i*pbatchsize, (i+1) * pbatchsize)
-        #X_batch = data[sl]
-        #y_batch = y[sl]
-        #pX_batch = pdata[psl]
-        #py_batch = py[psl]
-        X_batch = np.vstack((data[sl], pdata[psl]))
-        y_batch = np.vstack((y[sl], py[psl]))
+    for i in range((n_samples + BATCHSIZE - 1) // BATCHSIZE):
+        sl = slice(i*BATCHSIZE, (i+1) * BATCHSIZE)
+        psl = slice(i*pBATCHSIZE, (i+1) * pBATCHSIZE)
+        #tX_batch = data[train_indx[sl]]
+        #ty_batch = y[train_indx[sl]]
+        #pX_batch = pdata[test_indx[psl]]
+        #py_batch = py[test_indx[psl]]
+        X_batch = np.vstack((data[train_indx[sl]], pdata[test_indx[psl]]))
+        y_batch = np.vstack((y[train_indx[sl]], py[test_indx[psl]]))
         X_batch, y_batch = shuffle(X_batch, y_batch)
 
         # color intensity augmentation

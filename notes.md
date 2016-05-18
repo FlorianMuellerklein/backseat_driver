@@ -57,7 +57,7 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * No maxpool after first filter
 * FullPreActivation
 * Batch size - 64
-* L2 regularization - 0.00001 (same as paper)
+* L2 regularization - 0.00001 (less than paper)
 * Dropout after GlobalPoolLayer p=0.25
 * ADAM for 100 epoch - lr_schedule = {0:0.001, 60:0.0001, 80:0.00001}
 * Heavy Train Augmentations

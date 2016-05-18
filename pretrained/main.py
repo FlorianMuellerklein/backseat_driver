@@ -25,6 +25,9 @@ from keras.models import model_from_json
 # from sklearn.metrics import log_loss
 from numpy.random import permutation
 
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils import BatchAugmentor
 
 np.random.seed(2016)
 use_cache = 1
@@ -352,11 +355,13 @@ def run_cross_validation(nfolds=10, nb_epoch=10, split=0.2, modelStr=''):
     img_rows, img_cols = 224, 224
     batch_size = 32
     random_state = 20
+    augmentor = None
 
     train_data, train_target, driver_id, unique_drivers = \
         read_and_normalize_and_shuffle_train_data(img_rows, img_cols,
                                                   color_type_global)
 
+batch_aug = True # needs to be run with -p 224
     # ishuf_train_data = []
     # shuf_train_target = []
     # index_shuf = range(len(train_target))
@@ -370,6 +375,8 @@ def run_cross_validation(nfolds=10, nb_epoch=10, split=0.2, modelStr=''):
     num_fold = 0
     kf = KFold(len(unique_drivers), n_folds=nfolds,
                shuffle=True, random_state=random_state)
+    
+    
     for train_drivers, test_drivers in kf:
         num_fold += 1
         print('Start KFold number {} from {}'.format(num_fold, nfolds))
@@ -381,10 +388,21 @@ def run_cross_validation(nfolds=10, nb_epoch=10, split=0.2, modelStr=''):
         # model = vgg_bn_model(img_rows, img_cols, color_type_global)
         model = vgg_std16_model(img_rows, img_cols, color_type_global)
 
-        model.fit(train_data, train_target, batch_size=batch_size,
-                  nb_epoch=nb_epoch,
-                  verbose=1,
-                  validation_split=split, shuffle=True)
+        if not batch_aug:
+            model.fit(train_data, train_target, batch_size=batch_size,
+                      nb_epoch=nb_epoch,
+                      verbose=1,
+                      validation_split=split, shuffle=True)
+        else:
+            if augmentor is None:
+                augmentor = BatchAugmentor()    
+                
+            X_train, X_test, y_train, y_test = split_validation_set(train_data, train_target, test_size=split)
+            model.fit_generator(augmentor.flow(X_train, y_train, batch_size=batch_size, shuffle=True),
+                      nb_epoch=nb_epoch,
+                      verbose=1,
+                      validation_data=(X_test, y_test),
+                      samples_per_epoch=train_data.shape[0])
 
         # print('losses: ' + hist.history.losses[-1])
 
@@ -448,7 +466,10 @@ def test_model_and_submit(start=1, end=1, modelStr=''):
     create_submission(test_res, test_id, info_string)
 
 # nfolds, nb_epoch, split
-run_cross_validation(2, 20, 0.15, '_vgg_16_2x20')
+#run_cross_validation(2, 20, 0.15, '_vgg_16_2x20')
+#run_cross_validation(10, 15, 0.15, '_vgg_16_10x15')
+run_cross_validation(2, 20, 0.15, '_vgg_16_2x20_aug')
+#run_cross_validation(2, 20, 0.15, '_vgg_16_2x20_aug')
 
 # nb_epoch, split
 # run_one_fold_cross_validation(10, 0.1)

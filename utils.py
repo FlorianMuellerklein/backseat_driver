@@ -469,3 +469,105 @@ def batch_iterator_valid(data_test, y_test, batchsize, valid_fn):
     #plot_sample((X_batch_test[0] / np.amax(X_batch_test)))
 
     return np.mean(loss_valid), np.mean(acc_valid)
+
+
+# TODO: batch_iterator_train should also be replaced by calling this shared function
+def augment_batch(X_batch, y_batch):
+    '''
+    Data augmentation batch iterator for feeding images into CNN.
+    Pads each image with 16 pixels on every side.
+    Randomly crops image with original image shape from padded image. Effectively translating it.
+    Randomly perturbs intensity of color channels by ~10 percent of intensity.
+    Randomly perturbs brightness of image by 90-110%
+    Random shears -5 to 5 degrees
+    Random rotations -15 to 15 degrees
+    '''
+    
+    # color intensity augmentation
+    r_intensity = random.randint(0,1)
+    g_intensity = random.randint(0,1)
+    b_intensity = random.randint(0,1)
+    intensity_scaler = random.randint(-20, 20)
+
+    # pad and crop settings
+    trans_1 = random.randint(0, (PAD_CROP*2))
+    trans_2 = random.randint(0, (PAD_CROP*2))
+    crop_x1 = trans_1
+    crop_x2 = (PIXELS + trans_1)
+    crop_y1 = trans_2
+    crop_y2 = (PIXELS + trans_2)
+
+    # random zooms
+    zoom = random.uniform(0.8, 1.2)
+
+    # shearing
+    shear_deg = random.uniform(-5,5)
+
+    # random rotations betweein -15 and 15 degrees
+    dorotate = random.randint(-15,15)
+
+    # brightness settings
+    bright = random.uniform(0.9,1.1)
+
+    # flip left-right choice
+    #flip_lr = random.randint(0,1)
+
+    # flip up-down choice
+    #flip_ud = random.randint(0,1)
+
+    # set the transform parameters for skimage.transform.warp
+    # have to shift to center and then shift back after transformation otherwise
+    # rotations will make image go out of frame
+    center_shift   = np.array((PIXELS, PIXELS)) / 2. - 0.5
+    tform_center   = transform.SimilarityTransform(translation=-center_shift)
+    tform_uncenter = transform.SimilarityTransform(translation=center_shift)
+
+    tform_aug = transform.AffineTransform(shear = np.deg2rad(shear_deg),
+                                          scale = (1/zoom, 1/zoom),
+                                          rotation = np.deg2rad(dorotate))
+
+    tform = tform_center + tform_aug + tform_uncenter
+
+    # set empty copy to hold augmented images so that we don't overwrite
+    X_batch_aug = np.copy(X_batch)
+
+    # for each image in the batch do the augmentation
+    for j in range(X_batch.shape[0]):
+        # for each image channel
+        for k in range(X_batch.shape[1]):
+            X_batch_aug[j,k] = fast_warp(X_batch_aug[j,k], tform, output_shape=(PIXELS,PIXELS))
+            # pad and crop images
+            img_pad = np.pad(X_batch_aug[j,k], pad_width=((PAD_CROP,PAD_CROP), (PAD_CROP,PAD_CROP)), mode='constant')
+            X_batch_aug[j,k] = img_pad[crop_x1:crop_x2, crop_y1:crop_y2]
+
+            # flip left-right if chosen
+            #if flip_lr == 1:
+            #    X_batch_aug[j,k] = np.fliplr(X_batch_aug[j,k])
+
+            # flip left-right if chosen
+            #if flip_ud == 1:
+            #    X_batch_aug[j,k] = np.flipud(X_batch_aug[j,k])
+
+        if r_intensity == 1:
+            X_batch_aug[j][0] += intensity_scaler
+        if g_intensity == 1:
+            X_batch_aug[j][1] += intensity_scaler
+        if b_intensity == 1:
+            X_batch_aug[j][2] += intensity_scaler
+
+        # adjust brightness
+        X_batch_aug[j] = X_batch_aug[j] * bright
+        
+        return X_batch_aug, y_batch
+    
+from keras.preprocessing.image import ImageDataGenerator
+
+class BatchAugmentor(ImageDataGenerator):
+    def next(self):
+        with self.lock:
+            index_array, current_index, current_batch_size = next(self.flow_generator)
+             
+        X_batch = self.X[index_array]
+        y_batch = self.y[index_array]
+
+        return augment_batch(X_batch, y_batch)

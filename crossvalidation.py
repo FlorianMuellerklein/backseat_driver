@@ -55,7 +55,7 @@ def load_cv_fold(encoder, fold_idx=0):
     # pixel mean should just be on the training set
     # but to keep it simple across all folds, just do it on all of the data
     if not os.path.isfile('data/pixel_mean_full_%d.npy'%PIXELS):
-        pixel_mean = np.mean(np.concatenate([X_train, X_test], axis=0))
+        pixel_mean = np.mean(np.concatenate([X_train, X_test], axis=0), axis=0)
         np.save('data/pixel_mean_full_%d.npy'%PIXELS, pixel_mean)
 
     # subtract per-pixel mean
@@ -190,7 +190,7 @@ def create_cv_cache(args):
     # pixel mean should just be on the training set
     # but to keep it simple across all folds, just do it on all of the data
     if not os.path.isfile('data/pixel_mean_full_%d.npy'%PIXELS):
-        pixel_mean = np.mean(np.concatenate(X_data, axis=0))
+        pixel_mean = np.mean(X_data, axis=0)
         np.save('data/pixel_mean_full_%d.npy'%PIXELS, pixel_mean)
 
 

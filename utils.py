@@ -157,6 +157,61 @@ def load_test(cache=False, size=PIXELS):
 
     return X_test, X_test_id
 
+def load_test_efficient(cache=False, size=PIXELS, grayscale=False):
+    if grayscale:
+        mode = '_bw'
+    else:
+        mode = ''
+
+    filename = 'data/cache/X_test_%d_f32%s'%(PIXELS, mode)
+
+    if cache and os.path.exists(filename):
+        X_test = np.load(filename)
+        X_test_id = np.load('data/cache/X_test_id_f32.npy')
+    else:
+        print('Read test images')
+        path = os.path.join('data', 'imgs', 'test', '*.jpg')
+        files = glob.glob(path)
+        total_files = len(files)
+
+        X_test_id = np.empty(total_files, dtype='S14') # S14 is what numpy saves these as
+
+        # Lazy allocation 
+        X_test = None
+        
+        for count, fl in enumerate(files):
+            if count%100 == 0:
+                print('%d of %d'%(count, len(files)))
+
+            flbase = os.path.basename(fl)
+            img = imread(fl, as_grey = grayscale)
+            img = transform.resize(img, output_shape=(PIXELS, PIXELS, 3), preserve_range=True)
+            
+            if not grayscale:
+                #img = img.transpose(2, 0, 1)
+                channels = 3
+            else:
+                channels = 1
+            
+            if X_test is none:
+                X_test = np.empty((PIXELS, PIXELS, channels, total_files), dtype=np.float32)
+             
+            # Removed for computation and ease of figuring out if its grayscale
+            #img = np.reshape(img, (1, num_features))
+            X_test[..., count] = transform.resize(img, output_shape=(PIXELS, PIXELS, channels), preserve_range=True)
+            X_test_id[count] = flbase
+
+        np.save(filename, X_test)
+        np.save('data/cache/X_test_id_f32.npy', X_test_id)
+
+    X_train = X_train.transpose(3, 2, 0, 1) #/ 255.
+
+    # subtract pixel mean
+    pixel_mean = np.load('data/pixel_mean_full_%d.npy'%PIXELS)
+    X_test -= pixel_mean
+
+    return X_test, X_test_id
+
 def load_pseudo(cache=True, size=PIXELS):
     if cache:
         X_test = np.load('data/cache/X_test_%d_f32.npy'%PIXELS)

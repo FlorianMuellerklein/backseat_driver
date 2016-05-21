@@ -420,7 +420,7 @@ def run_cross_validation(nfolds=10, nb_epoch=10, split=0.2, modelStr=''):
             #    yfull_train[test_index[i]] = predictions_valid[i]
 
     else:
-        num_folds = nfolds
+        num_fold = nfolds
 
     print('Start testing............')
     test_data, test_id = read_and_normalize_test_data(img_rows, img_cols,
@@ -428,10 +428,9 @@ def run_cross_validation(nfolds=10, nb_epoch=10, split=0.2, modelStr=''):
     yfull_test = []
 
     for index in range(1, num_fold + 1):
-        # 1,2,3,4,5
-        # Store test predictions
         model = read_model(index, modelStr)
-        test_prediction = model.predict(test_data, batch_size=128, verbose=1)
+        model.compile(optimizer=SGD(), loss='categorical_crossentropy', metrics=['accuracy'])
+        test_prediction = model.predict(test_data, batch_size=batch_size, verbose=1)
         yfull_test.append(test_prediction)
 
     info_string = 'loss_' + modelStr \

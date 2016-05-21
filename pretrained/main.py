@@ -353,17 +353,17 @@ def run_cross_validation(nfolds=10, nb_epoch=10, split=0.2, modelStr=''):
     # Now it loads color image
     # input image dimensions
     img_rows, img_cols = 224, 224
-    batch_size = 32
+    batch_size = 16
     random_state = 20
     augmentor = None
-
-    train_data, train_target, driver_id, unique_drivers = \
-        read_and_normalize_and_shuffle_train_data(img_rows, img_cols,
-                                                  color_type_global)
 
     eval_only = False
     batch_aug = True # needs to be run with -p 224
     if not eval_only:
+        
+        train_data, train_target, driver_id, unique_drivers = \
+            read_and_normalize_and_shuffle_train_data(img_rows, img_cols,
+                                                      color_type_global)
         # ishuf_train_data = []
         # shuf_train_target = []
         # index_shuf = range(len(train_target))

@@ -1,13 +1,16 @@
 import sys
 sys.setrecursionlimit(10000)
+import numpy as np
+
+import theano
 import lasagne
-from lasagne.nonlinearities import rectify, softmax, sigmoid, linear, elu, very_leaky_rectify, leaky_rectify
+from lasagne.nonlinearities import rectify, softmax, sigmoid, linear, elu, very_leaky_rectify, leaky_rectify, identity
 from lasagne.layers import InputLayer, MaxPool2DLayer, DenseLayer, DropoutLayer, helper, batch_norm, BatchNormLayer
-from lasagne.layers import Conv2DLayer, ConcatLayer
+from lasagne.layers import Conv2DLayer, ConcatLayer, TransformerLayer
 # for ResNet
 from lasagne.layers.dnn import Conv2DDNNLayer as ConvLayer
 from lasagne.layers import Pool2DLayer, ElemwiseSumLayer, NonlinearityLayer, PadLayer, GlobalPoolLayer, ExpressionLayer
-from lasagne.init import Orthogonal, HeNormal, GlorotNormal
+from lasagne.init import Orthogonal, HeNormal, GlorotNormal, HeUniform
 # for BLVC Googlenet
 from lasagne.layers.dnn import MaxPool2DDNNLayer as PoolLayerDNN
 from lasagne.layers import LocalResponseNormalization2DLayer as LRNLayer
@@ -324,6 +327,219 @@ def ResNet_FullPre(input_var=None, n=5):
     network = DenseLayer(dropout, num_units=10, W=HeNormal(), nonlinearity=softmax)
 
     return network
+
+# ========================================================================================================================
+
+def ResNet_FullPre_Wide(input_var=None, n=5, k=2):
+    '''
+    Adapted from https://github.com/Lasagne/Recipes/tree/master/papers/deep_residual_learning.
+    Tweaked to be consistent with 'Identity Mappings in Deep Residual Networks', Kaiming He et al. 2016 (https://arxiv.org/abs/1603.05027)
+    Formula to figure out depth: 8n+2
+    '''
+    n_filters = {0:16, 1:16*k, 2:32*k, 3:64*k, 4:128*k}
+
+    # create a residual learning building block with two stacked 3x3 convlayers as in paper
+    def residual_block(l, increase_dim=False, projection=True, first=False, filters=16):
+        if increase_dim:
+            first_stride = (2,2)
+            #out_num_filters = input_num_filters
+        else:
+            first_stride = (1,1)
+            #out_num_filters = input_num_filters
+
+        if first:
+            # hacky solution to keep layers correct
+            bn_pre_relu = l
+        else:
+            # contains the BN -> ReLU portion, steps 1 to 2
+            bn_pre_conv = BatchNormLayer(l)
+            bn_pre_relu = NonlinearityLayer(bn_pre_conv, rectify)
+
+        # contains the weight -> BN -> ReLU portion, steps 3 to 5
+        conv_1 = batch_norm(ConvLayer(bn_pre_relu, num_filters=filters, filter_size=(3,3), stride=first_stride, nonlinearity=rectify, pad='same', W=he_norm))
+
+        dropout = DropoutLayer(conv_1, p=0.5)
+
+        # contains the last weight portion, step 6
+        conv_2 = ConvLayer(dropout, num_filters=filters, filter_size=(3,3), stride=(1,1), nonlinearity=None, pad='same', W=he_norm)
+
+        # add shortcut connections
+        if increase_dim:
+            # projection shortcut, as option B in paper
+            projection = ConvLayer(l, num_filters=filters, filter_size=(1,1), stride=(2,2), nonlinearity=None, pad='same', b=None)
+            block = ElemwiseSumLayer([conv_2, projection])
+
+        elif first:
+            # projection shortcut, as option B in paper
+            projection = ConvLayer(l, num_filters=filters, filter_size=(1,1), stride=(1,1), nonlinearity=None, pad='same', b=None)
+            block = ElemwiseSumLayer([conv_2, projection])
+        else:
+            block = ElemwiseSumLayer([conv_2, l])
+
+        return block
+
+    # Building the network
+    l_in = InputLayer(shape=(None, 3, PIXELS, PIXELS), input_var=input_var)
+
+    # first layer, output is 16 x 64 x 64
+    l = batch_norm(ConvLayer(l_in, num_filters=n_filters[0], filter_size=(5,5), stride=(1,1), nonlinearity=rectify, pad='same', W=he_norm))
+    l = MaxPool2DLayer(l, pool_size=2)
+
+    # first stack of residual blocks, output is 32 x 64 x 64
+    l = residual_block(l, first=True, filters=n_filters[1])
+    for _ in range(1,n):
+        l = residual_block(l, filters=n_filters[1])
+
+    # second stack of residual blocks, output is 64 x 32 x 32
+    l = residual_block(l, increase_dim=True, filters=n_filters[2])
+    for _ in range(1,(n+2)):
+        l = residual_block(l, filters=n_filters[2])
+
+    # third stack of residual blocks, output is 128 x 16 x 16
+    l = residual_block(l, increase_dim=True, filters=n_filters[3])
+    for _ in range(1,(n+2)):
+        l = residual_block(l, filters=n_filters[3])
+
+    # third stack of residual blocks, output is 256 x 8 x 8
+    l = residual_block(l, increase_dim=True, filters=n_filters[4])
+    for _ in range(1,n):
+        l = residual_block(l, filters=n_filters[4])
+
+    bn_post_conv = BatchNormLayer(l)
+    bn_post_relu = NonlinearityLayer(bn_post_conv, rectify)
+
+    # average pooling
+    avg_pool = GlobalPoolLayer(bn_post_relu)
+
+    # FC should be alternative to avg_pool
+    #l_hidden1 = batch_norm(DenseLayer(avg_pool, num_units=1024, W=he_norm, nonlinearity=rectify))
+    #l_hidden2 = batch_norm(DenseLayer(l_hidden1, num_units=1024, W=he_norm, nonlinearity=rectify))
+
+    # dropout
+    #dropout = DropoutLayer(avg_pool, p=0.25)
+
+    # fully connected layer
+    network = DenseLayer(avg_pool, num_units=10, W=HeNormal(), nonlinearity=softmax)
+
+    return network, l_in
+
+# ========================================================================================================================
+
+def ResNet_Wide_Trans(input_var=None, n=3, k=5):
+    '''
+    Spatial Transformer ResNet
+    'Spatial Transformer Networks', Max Jaderberg, Karen Simonyan, Andrew Zisserman, Koray Kavukcuoglu (https://arxiv.org/pdf/1506.02025v3.pdf)
+    Adapted from https://github.com/skaae/transformer_network
+
+    Adapted from https://github.com/Lasagne/Recipes/tree/master/papers/deep_residual_learning.
+    Tweaked to be consistent with 'Identity Mappings in Deep Residual Networks', Kaiming He et al. 2016 (https://arxiv.org/abs/1603.05027)
+    Formula to figure out depth: 8n+2
+    '''
+    n_filters = {0:16, 1:16*k, 2:32*k, 3:64*k, 4:128*k}
+
+    # create a residual learning building block with two stacked 3x3 convlayers as in paper
+    def residual_block(l, increase_dim=False, projection=True, first=False, filters=16):
+        if increase_dim:
+            first_stride = (2,2)
+            #out_num_filters = input_num_filters
+        else:
+            first_stride = (1,1)
+            #out_num_filters = input_num_filters
+
+        if first:
+            # hacky solution to keep layers correct
+            bn_pre_relu = l
+        else:
+            # contains the BN -> ReLU portion, steps 1 to 2
+            bn_pre_conv = BatchNormLayer(l)
+            bn_pre_relu = NonlinearityLayer(bn_pre_conv, rectify)
+
+        # contains the weight -> BN -> ReLU portion, steps 3 to 5
+        conv_1 = batch_norm(ConvLayer(bn_pre_relu, num_filters=filters, filter_size=(3,3), stride=first_stride, nonlinearity=rectify, pad='same', W=he_norm))
+
+        dropout = DropoutLayer(conv_1, p=0.5)
+
+        # contains the last weight portion, step 6
+        conv_2 = ConvLayer(dropout, num_filters=filters, filter_size=(3,3), stride=(1,1), nonlinearity=None, pad='same', W=he_norm)
+
+        # add shortcut connections
+        if increase_dim:
+            # projection shortcut, as option B in paper
+            projection = ConvLayer(l, num_filters=filters, filter_size=(1,1), stride=(2,2), nonlinearity=None, pad='same', b=None)
+            block = ElemwiseSumLayer([conv_2, projection])
+
+        elif first:
+            # projection shortcut, as option B in paper
+            projection = ConvLayer(l, num_filters=filters, filter_size=(1,1), stride=(1,1), nonlinearity=None, pad='same', b=None)
+            block = ElemwiseSumLayer([conv_2, projection])
+        else:
+            block = ElemwiseSumLayer([conv_2, l])
+
+        return block
+
+    # Building the network
+    l_in = InputLayer(shape=(None, 3, PIXELS, PIXELS), input_var=input_var)
+
+    # Localization network
+    # same architecture as svhn localization network from paper
+    b = np.zeros((2, 3), dtype=theano.config.floatX)
+    b[0, 0] = 1
+    b[1, 1] = 1
+    b = b.flatten()
+    loc_l1 = MaxPool2DLayer(l_in, pool_size=(2,2))
+    loc_l2 = batch_norm(ConvLayer(loc_l1, num_filters=32, filter_size=(5,5), stride=1, W=HeUniform(), pad='same'))
+    loc_l3 = MaxPool2DLayer(loc_l2, pool_size=(2,2))
+    loc_l4 = batch_norm(ConvLayer(loc_l3, num_filters=32, filter_size=(5,5), stride=1, W=HeUniform(), pad='same'))
+    loc_l5 = batch_norm(DenseLayer(loc_l4, num_units=32, W=HeUniform()))
+    loc_l6 = batch_norm(DenseLayer(loc_l5, num_units=32, W=HeUniform()))
+    loc_out = DenseLayer(loc_l6, num_units=6, b=b, W=lasagne.init.Constant(0.0), nonlinearity=None)
+
+    # Transformer network
+    l_trans1 = TransformerLayer(l_in, loc_out, downsample_factor=1.0)
+    print "Transformer network output shape: ", l_trans1.output_shape
+
+    # first layer, output is 16 x 64 x 64
+    l = batch_norm(ConvLayer(l_in, num_filters=n_filters[0], filter_size=(5,5), stride=(1,1), nonlinearity=rectify, pad='same', W=he_norm))
+    l = MaxPool2DLayer(l, pool_size=2)
+
+    # first stack of residual blocks, output is 32 x 64 x 64
+    l = residual_block(l, first=True, filters=n_filters[1])
+    for _ in range(1,n):
+        l = residual_block(l, filters=n_filters[1])
+
+    # second stack of residual blocks, output is 64 x 32 x 32
+    l = residual_block(l, increase_dim=True, filters=n_filters[2])
+    for _ in range(1,(n+2)):
+        l = residual_block(l, filters=n_filters[2])
+
+    # third stack of residual blocks, output is 128 x 16 x 16
+    l = residual_block(l, increase_dim=True, filters=n_filters[3])
+    for _ in range(1,(n+2)):
+        l = residual_block(l, filters=n_filters[3])
+
+    # third stack of residual blocks, output is 256 x 8 x 8
+    l = residual_block(l, increase_dim=True, filters=n_filters[4])
+    for _ in range(1,n):
+        l = residual_block(l, filters=n_filters[4])
+
+    bn_post_conv = BatchNormLayer(l)
+    bn_post_relu = NonlinearityLayer(bn_post_conv, rectify)
+
+    # average pooling
+    avg_pool = GlobalPoolLayer(bn_post_relu)
+
+    # FC should be alternative to avg_pool
+    #l_hidden1 = batch_norm(DenseLayer(avg_pool, num_units=1024, W=he_norm, nonlinearity=rectify))
+    #l_hidden2 = batch_norm(DenseLayer(l_hidden1, num_units=1024, W=he_norm, nonlinearity=rectify))
+
+    # dropout
+    #dropout = DropoutLayer(avg_pool, p=0.25)
+
+    # fully connected layer
+    network = DenseLayer(avg_pool, num_units=10, W=HeNormal(), nonlinearity=softmax)
+
+    return network, l_in
+
 
 # ========================================================================================================================
 

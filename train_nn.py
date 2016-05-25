@@ -14,7 +14,7 @@ from lasagne.nonlinearities import softmax
 from sklearn.preprocessing import LabelEncoder, LabelBinarizer
 from sklearn.metrics import confusion_matrix
 
-from models import vgg16, ResNet_Orig, ResNet_FullPre, ResNet_BttlNck_FullPre, ResNet_Orig_ELU
+from models import ResNet_FullPre, ResNet_FullPre_Wide, ResNet_Wide_Trans
 from utils import load_train_cv, batch_iterator_train, batch_iterator_valid, load_pseudo, batch_iterator_train_pseudo_label
 from crossvalidation import load_cv_fold
 
@@ -32,9 +32,9 @@ ITERS = args.epochs
 BATCHSIZE = args.batchsize
 
 LR_SCHEDULE = {
-    0: 0.001,
-    60: 0.0001,
-    85: 0.00001
+    0: 0.0001,
+    80: 0.00001,
+    120: 0.000001
 }
 
 encoder = LabelEncoder()
@@ -47,7 +47,7 @@ Y = T.ivector('y')
 
 # set up theano functions to generate output by feeding data through network, any test outputs should be deterministic
 # load model
-output_layer = ResNet_FullPre(X, n=9)
+output_layer = ResNet_Wide_Trans(X, n=3, k=5)
 
 # create outputs
 output_train = lasagne.layers.get_output(output_layer)
@@ -60,7 +60,7 @@ loss = loss.mean()
 
 # if using ResNet use L2 regularization
 all_layers = lasagne.layers.get_all_layers(output_layer)
-l2_penalty = lasagne.regularization.regularize_layer_params(all_layers, lasagne.regularization.l2) * 0.00001
+l2_penalty = lasagne.regularization.regularize_layer_params(all_layers, lasagne.regularization.l2) * 0.0001
 loss = loss + l2_penalty
 
 # set up loss functions for validation dataset

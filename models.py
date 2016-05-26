@@ -373,6 +373,7 @@ def ResNet_FullPre_Wide(input_var=None, n=5, k=2):
             # projection shortcut, as option B in paper
             projection = ConvLayer(l, num_filters=filters, filter_size=(1,1), stride=(1,1), nonlinearity=None, pad='same', b=None)
             block = ElemwiseSumLayer([conv_2, projection])
+            
         else:
             block = ElemwiseSumLayer([conv_2, l])
 
@@ -425,7 +426,7 @@ def ResNet_FullPre_Wide(input_var=None, n=5, k=2):
 
 # ========================================================================================================================
 
-def ResNet_Wide_Trans(input_var=None, n=3, k=5):
+def ResNet_FullPre_Trans(input_var=None, n=5):
     '''
     Spatial Transformer ResNet
     'Spatial Transformer Networks', Max Jaderberg, Karen Simonyan, Andrew Zisserman, Koray Kavukcuoglu (https://arxiv.org/pdf/1506.02025v3.pdf)
@@ -435,16 +436,15 @@ def ResNet_Wide_Trans(input_var=None, n=3, k=5):
     Tweaked to be consistent with 'Identity Mappings in Deep Residual Networks', Kaiming He et al. 2016 (https://arxiv.org/abs/1603.05027)
     Formula to figure out depth: 8n+2
     '''
-    n_filters = {0:16, 1:16*k, 2:32*k, 3:64*k, 4:128*k}
-
     # create a residual learning building block with two stacked 3x3 convlayers as in paper
-    def residual_block(l, increase_dim=False, projection=True, first=False, filters=16):
+    def residual_block(l, increase_dim=False, projection=True, first=False):
+        input_num_filters = l.output_shape[1]
         if increase_dim:
             first_stride = (2,2)
-            #out_num_filters = input_num_filters
+            out_num_filters = input_num_filters*2
         else:
             first_stride = (1,1)
-            #out_num_filters = input_num_filters
+            out_num_filters = input_num_filters
 
         if first:
             # hacky solution to keep layers correct
@@ -455,23 +455,21 @@ def ResNet_Wide_Trans(input_var=None, n=3, k=5):
             bn_pre_relu = NonlinearityLayer(bn_pre_conv, rectify)
 
         # contains the weight -> BN -> ReLU portion, steps 3 to 5
-        conv_1 = batch_norm(ConvLayer(bn_pre_relu, num_filters=filters, filter_size=(3,3), stride=first_stride, nonlinearity=rectify, pad='same', W=he_norm))
-
-        dropout = DropoutLayer(conv_1, p=0.5)
+        conv_1 = batch_norm(ConvLayer(bn_pre_relu, num_filters=out_num_filters, filter_size=(3,3), stride=first_stride, nonlinearity=rectify, pad='same', W=he_norm))
 
         # contains the last weight portion, step 6
-        conv_2 = ConvLayer(dropout, num_filters=filters, filter_size=(3,3), stride=(1,1), nonlinearity=None, pad='same', W=he_norm)
+        conv_2 = ConvLayer(conv_1, num_filters=out_num_filters, filter_size=(3,3), stride=(1,1), nonlinearity=None, pad='same', W=he_norm)
 
         # add shortcut connections
         if increase_dim:
             # projection shortcut, as option B in paper
-            projection = ConvLayer(l, num_filters=filters, filter_size=(1,1), stride=(2,2), nonlinearity=None, pad='same', b=None)
+            projection = ConvLayer(l, num_filters=out_num_filters, filter_size=(1,1), stride=(2,2), nonlinearity=None, pad='same', b=None)
             block = ElemwiseSumLayer([conv_2, projection])
 
-        elif first:
-            # projection shortcut, as option B in paper
-            projection = ConvLayer(l, num_filters=filters, filter_size=(1,1), stride=(1,1), nonlinearity=None, pad='same', b=None)
-            block = ElemwiseSumLayer([conv_2, projection])
+            # identity shortcut, as option A in paper
+            #identity = ExpressionLayer(l, lambda X: X[:, :, ::2, ::2], lambda s: (s[0], s[1], s[2]//2, s[3]//2))
+            #padding = PadLayer(identity, [out_num_filters//4,0,0], batch_ndim=1)
+            #block = ElemwiseSumLayer([conv_2, padding])
         else:
             block = ElemwiseSumLayer([conv_2, l])
 
@@ -486,41 +484,45 @@ def ResNet_Wide_Trans(input_var=None, n=3, k=5):
     b[0, 0] = 1
     b[1, 1] = 1
     b = b.flatten()
-    loc_l1 = MaxPool2DLayer(l_in, pool_size=(2,2))
-    loc_l2 = batch_norm(ConvLayer(loc_l1, num_filters=32, filter_size=(5,5), stride=1, W=HeUniform(), pad='same'))
-    loc_l3 = MaxPool2DLayer(loc_l2, pool_size=(2,2))
-    loc_l4 = batch_norm(ConvLayer(loc_l3, num_filters=32, filter_size=(5,5), stride=1, W=HeUniform(), pad='same'))
-    loc_l5 = batch_norm(DenseLayer(loc_l4, num_units=32, W=HeUniform()))
-    loc_l6 = batch_norm(DenseLayer(loc_l5, num_units=32, W=HeUniform()))
-    loc_out = DenseLayer(loc_l6, num_units=6, b=b, W=lasagne.init.Constant(0.0), nonlinearity=None)
+
+    loc_conv1a = batch_norm(ConvLayer(l_in, num_filters=32, filter_size=(3,3), stride=1, W=he_norm, nonlinearity=rectify, pad='same'))
+    loc_conv1b = batch_norm(ConvLayer(loc_conv1a, num_filters=32, filter_size=(3,3), stride=1, W=he_norm, nonlinearity=rectify, pad='same'))
+    loc_pool1 = MaxPool2DLayer(loc_conv1b, pool_size=(2,2))
+
+    loc_conv2a = batch_norm(ConvLayer(loc_pool1, num_filters=64, filter_size=(3,3), stride=1, W=he_norm, nonlinearity=rectify, pad='same'))
+    loc_conv2b = batch_norm(ConvLayer(loc_conv2a, num_filters=64, filter_size=(3,3), stride=1, W=he_norm, nonlinearity=rectify, pad='same'))
+    loc_pool2 = MaxPool2DLayer(loc_conv2b, pool_size=(2,2))
+
+    loc_fc1 = batch_norm(DenseLayer(loc_pool2, num_units=128, W=he_norm))
+    loc_fc2 = batch_norm(DenseLayer(loc_fc1, num_units=128, W=he_norm))
+    loc_out = DenseLayer(loc_fc2, num_units=6, b=b, W=lasagne.init.Constant(0.0), nonlinearity=None)
 
     # Transformer network
     l_trans1 = TransformerLayer(l_in, loc_out, downsample_factor=1.0)
-    print "Transformer network output shape: ", l_trans1.output_shape
 
     # first layer, output is 16 x 64 x 64
-    l = batch_norm(ConvLayer(l_in, num_filters=n_filters[0], filter_size=(5,5), stride=(1,1), nonlinearity=rectify, pad='same', W=he_norm))
+    l = batch_norm(ConvLayer(l_trans1, num_filters=16, filter_size=(5,5), stride=(1,1), nonlinearity=rectify, pad='same', W=he_norm))
     l = MaxPool2DLayer(l, pool_size=2)
 
-    # first stack of residual blocks, output is 32 x 64 x 64
-    l = residual_block(l, first=True, filters=n_filters[1])
+    # first stack of residual blocks, output is 16 x 64 x 64
+    l = residual_block(l, first=True)
     for _ in range(1,n):
-        l = residual_block(l, filters=n_filters[1])
+        l = residual_block(l)
 
-    # second stack of residual blocks, output is 64 x 32 x 32
-    l = residual_block(l, increase_dim=True, filters=n_filters[2])
+    # second stack of residual blocks, output is 32 x 32 x 32
+    l = residual_block(l, increase_dim=True)
     for _ in range(1,(n+2)):
-        l = residual_block(l, filters=n_filters[2])
+        l = residual_block(l)
 
-    # third stack of residual blocks, output is 128 x 16 x 16
-    l = residual_block(l, increase_dim=True, filters=n_filters[3])
+    # third stack of residual blocks, output is 64 x 16 x 16
+    l = residual_block(l, increase_dim=True)
     for _ in range(1,(n+2)):
-        l = residual_block(l, filters=n_filters[3])
+        l = residual_block(l)
 
-    # third stack of residual blocks, output is 256 x 8 x 8
-    l = residual_block(l, increase_dim=True, filters=n_filters[4])
+    # third stack of residual blocks, output is 128 x 8 x 8
+    l = residual_block(l, increase_dim=True)
     for _ in range(1,n):
-        l = residual_block(l, filters=n_filters[4])
+        l = residual_block(l)
 
     bn_post_conv = BatchNormLayer(l)
     bn_post_relu = NonlinearityLayer(bn_post_conv, rectify)
@@ -528,17 +530,10 @@ def ResNet_Wide_Trans(input_var=None, n=3, k=5):
     # average pooling
     avg_pool = GlobalPoolLayer(bn_post_relu)
 
-    # FC should be alternative to avg_pool
-    #l_hidden1 = batch_norm(DenseLayer(avg_pool, num_units=1024, W=he_norm, nonlinearity=rectify))
-    #l_hidden2 = batch_norm(DenseLayer(l_hidden1, num_units=1024, W=he_norm, nonlinearity=rectify))
-
-    # dropout
-    #dropout = DropoutLayer(avg_pool, p=0.25)
-
     # fully connected layer
     network = DenseLayer(avg_pool, num_units=10, W=HeNormal(), nonlinearity=softmax)
 
-    return network, l_in
+    return network
 
 
 # ========================================================================================================================

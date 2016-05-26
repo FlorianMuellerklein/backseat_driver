@@ -43,8 +43,7 @@ encoder = LabelBinarizer()
 Set up all theano functions
 """
 X = T.tensor4('X')
-Y = T.ivector('y')
-#Y = T.fvector('y') # use this for pseudo-label
+Y = T.fmatrix('y') # use this for pseudo-label
 
 # custom log loss for pseudo label soft-targets, takes vector as target input instead of label
 def pseudo_log_loss(pred, y, eps=1e-15):
@@ -95,14 +94,16 @@ valid_fn = theano.function(inputs=[X,Y], outputs=[test_loss, test_acc])
 '''
 load training data and start training
 '''
-encoder = LabelEncoder()
 
 # load the training and validation data sets
-train_X, train_y, test_X, test_y, encoder = batch_iterator_train_pseudo_label(encoder, cache=False, relabel=False)
-#train_X, train_y, test_X, test_y, encoder = load_cv_fold(encoder, args.fold)
-#pseudo_X, pseudo_labels = load_pseudo(cache=True)
+train_X, train_y, test_X, test_y, encoder = load_train_cv(encoder, cache=True, relabel=False)
+train_y = train_y.astype('float32')
+test_y = test_y.astype('float32')
+pseudo_X, pseudo_labels = load_pseudo(cache=True)
+pseudo_labels = pseudo_labels.astype('float32')
 print 'Train shape:', train_X.shape, 'Test shape:', test_X.shape
 print 'Train y shape:', train_y.shape, 'Test y shape:', test_y.shape
+print 'Pseudo X shape:', pseudo_X.shape, 'pseudo y shape:', pseudo_labels.shape
 print np.amax(train_X), np.amin(train_X), np.mean(train_X)
 
 # loop over training functions for however many iterations, print information while training
@@ -118,8 +119,7 @@ try:
         # do the training
         start = time.time()
 
-        train_loss = batch_iterator_train(train_X, train_y, BATCHSIZE, train_fn)
-        #train_loss = batch_iterator_train_pseudo_label(train_X, train_y, pseudo_X, pseudo_labels, BATCHSIZE, train_fn)
+        train_loss = batch_iterator_train_pseudo_label(train_X, train_y, pseudo_X, pseudo_labels, BATCHSIZE, 20, train_fn)
         train_eval.append(train_loss)
 
         valid_loss, acc_v = batch_iterator_valid(test_X, test_y, BATCHSIZE, valid_fn)
@@ -141,7 +141,12 @@ except KeyboardInterrupt:
 print "Best Valid Loss:", best_vl
 
 # save weights
-f = gzip.open('data/weights/%s.pklz'%experiment_label, 'wb')
+f = gzip.open('data/weights/%s_best.pklz'%experiment_label, 'wb')
+pickle.dump(best_params, f)
+f.close()
+
+last_params = helper.get_all_param_values(output_layer)
+f = gzip.open('data/weights/%s_last.pklz'%experiment_label, 'wb')
 pickle.dump(best_params, f)
 f.close()
 

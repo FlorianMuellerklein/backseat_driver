@@ -176,9 +176,9 @@ def load_test_efficient(cache=False, size=PIXELS, grayscale=False):
 
         X_test_id = np.empty(total_files, dtype='S14') # S14 is what numpy saves these as
 
-        # Lazy allocation 
+        # Lazy allocation
         X_test = None
-        
+
         for count, fl in enumerate(files):
             if count%100 == 0:
                 print('%d of %d'%(count, len(files)))
@@ -186,16 +186,16 @@ def load_test_efficient(cache=False, size=PIXELS, grayscale=False):
             flbase = os.path.basename(fl)
             img = imread(fl, as_grey = grayscale)
             img = transform.resize(img, output_shape=(PIXELS, PIXELS, 3), preserve_range=True)
-            
+
             if not grayscale:
                 #img = img.transpose(2, 0, 1)
                 channels = 3
             else:
                 channels = 1
-            
+
             if X_test is none:
                 X_test = np.empty((PIXELS, PIXELS, channels, total_files), dtype=np.float32)
-             
+
             # Removed for computation and ease of figuring out if its grayscale
             #img = np.reshape(img, (1, num_features))
             X_test[..., count] = transform.resize(img, output_shape=(PIXELS, PIXELS, channels), preserve_range=True)
@@ -343,7 +343,7 @@ def batch_iterator_train_pseudo_label(data, y, pdata, py, BATCHSIZE, pBATCHSIZE,
     Batch iterator for training wiht pseudo soft targets
     For total batch size 32, take 22 from train, and 10 from labeled test
     '''
-    batchsize -= pbatchsize
+    BATCHSIZE -= pBATCHSIZE
     n_samples = data.shape[0]
     #data, y = shuffle(data, y)
     train_indx = np.random.permutation(xrange(n_samples))
@@ -436,13 +436,13 @@ def batch_iterator_train_noaug(data, y, batchsize, train_fn):
     Batcher iterator for feeding images to CNN, no augmentations
     '''
     n_samples = data.shape[0]
-    data, y = shuffle(data, y)
+    indx = np.random.permutation(xrange(n_samples))
     loss = []
     acc_train = 0.
     for i in range((n_samples + batchsize - 1) // batchsize):
         sl = slice(i * batchsize, (i + 1) * batchsize)
-        X_batch = data[sl]
-        y_batch = y[sl]
+        X_batch = data[indx[sl]]
+        y_batch = y[indx[sl]]
 
         # fit model on each batch
         loss.append(train_fn(X_batch, y_batch))
@@ -482,7 +482,7 @@ def augment_batch(X_batch, y_batch):
     Random shears -5 to 5 degrees
     Random rotations -15 to 15 degrees
     '''
-    
+
     # color intensity augmentation
     r_intensity = random.randint(0,1)
     g_intensity = random.randint(0,1)
@@ -557,16 +557,16 @@ def augment_batch(X_batch, y_batch):
 
         # adjust brightness
         X_batch_aug[j] = X_batch_aug[j] * bright
-        
+
         return X_batch_aug, y_batch
-    
+
 from keras.preprocessing.image import ImageDataGenerator
 
 class BatchAugmentor(ImageDataGenerator):
     def next(self):
         with self.lock:
             index_array, current_index, current_batch_size = next(self.flow_generator)
-             
+
         X_batch = self.X[index_array]
         y_batch = self.y[index_array]
 

@@ -12,15 +12,15 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * Soft targets generated from ensemble 10 finetuned (ImageNet) VGG with data aug
 * FullPreActivation
 * Batch size - 64 (44 train / 20 test)
-* L2 regularization - 0.0001 
+* L2 regularization - 0.0001
 * ADAM for 100 epoch - lr_schedule = {0:0.001, 60:0.0001, 80:0.00001}
 * Heavy Train Augmentations
 * Trans TTA
 * Mean-pixel centering
 * Projection option
-* Individual (old local cv) accuracy - 99.9%
-* Local CV loss - 0.013
-* Submission score - 0.19
+* Individual (naive cv) accuracy - 99.7%
+* Local CV (naive) loss - 0.013
+* Submission LB score - 0.19
 * Time per epoch - 131 seconds
 
 ### Current Train Augmentation

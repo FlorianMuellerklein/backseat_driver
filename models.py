@@ -373,7 +373,7 @@ def ResNet_FullPre_Wide(input_var=None, n=5, k=2):
             # projection shortcut, as option B in paper
             projection = ConvLayer(l, num_filters=filters, filter_size=(1,1), stride=(1,1), nonlinearity=None, pad='same', b=None)
             block = ElemwiseSumLayer([conv_2, projection])
-            
+
         else:
             block = ElemwiseSumLayer([conv_2, l])
 
@@ -422,7 +422,7 @@ def ResNet_FullPre_Wide(input_var=None, n=5, k=2):
     # fully connected layer
     network = DenseLayer(avg_pool, num_units=10, W=HeNormal(), nonlinearity=softmax)
 
-    return network, l_in
+    return network
 
 # ========================================================================================================================
 

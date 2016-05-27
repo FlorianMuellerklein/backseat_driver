@@ -12,8 +12,7 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * Soft targets generated from ensemble 10 finetuned (ImageNet) VGG with data aug
 * FullPreActivation
 * Batch size - 64 (44 train / 20 test)
-* L2 regularization - 0.0001 (less than paper)
-* Dropout after GlobalPoolLayer p=0.25
+* L2 regularization - 0.0001 
 * ADAM for 100 epoch - lr_schedule = {0:0.001, 60:0.0001, 80:0.00001}
 * Heavy Train Augmentations
 * Trans TTA

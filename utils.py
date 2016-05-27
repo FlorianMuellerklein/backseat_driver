@@ -338,11 +338,12 @@ def batch_iterator_train(data, y, BATCHSIZE, train_fn):
 
     return np.mean(loss)
 
-def batch_iterator_train_pseudo_label(data, y, pdata, py, BATCHSIZE, pBATCHSIZE, train_fn):
+def batch_iterator_train_pseudo_label(data, y, pdata, py, BATCHSIZE, train_fn):
     '''
     Batch iterator for training wiht pseudo soft targets
     For total batch size 32, take 22 from train, and 10 from labeled test
     '''
+    pBATCHSIZE = int(round(BATCHSIZE * 0.31))
     BATCHSIZE -= pBATCHSIZE
     n_samples = data.shape[0]
     #data, y = shuffle(data, y)

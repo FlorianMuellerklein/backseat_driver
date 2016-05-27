@@ -4,16 +4,37 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 
 ## Current solution
 
-### Ensemble of 15 ResNet56
+### ResNet-82 with Pseudo Label (Soft Targets)
+* 128x128 Image size
 * Initial filter num - 16
-* L2 regularization - 0.0001 (same as paper)
-* Option B (Projection shortcuts)
-* Batch size - 32
-* Trained with ADAM for 75 epoch- lr_schedule = {0:0.001, 30:0.0001, 65:0.00001}
-* Individual models get 99.5-99.9% (random 10% valid on each training net)
-* Single model submission score - 0.71352
-* Ensemble submission score - 0.30114
-* Including batch iterator bug
+* Initial filter size - 5x5, stride 1
+* Maxpool after first filter
+* Soft targets generated from ensemble 10 finetuned (ImageNet) VGG with data aug
+* FullPreActivation
+* Batch size - 64 (44 train / 20 test)
+* L2 regularization - 0.0001 (less than paper)
+* Dropout after GlobalPoolLayer p=0.25
+* ADAM for 100 epoch - lr_schedule = {0:0.001, 60:0.0001, 80:0.00001}
+* Heavy Train Augmentations
+* Trans TTA
+* Mean-pixel centering
+* Projection option
+* Individual (old local cv) accuracy - 99.9%
+* Local CV loss - 0.013
+* Submission score - 0.19
+* Time per epoch - 131 seconds
+
+### Current Train Augmentation
+* Pad images with 16 pixels
+* Random crops of original image size
+* Random color intensity for each channel -20,20 (uniform)
+* Random rotations between -15,15 degrees (uniform)
+* Random shear between -5,5 degrees (uniform)
+* Random image brightness aug 90-110% (uniform)
+
+### Current Test Augmentation x15
+* Pad images with 8 pixels
+* Random crops of original image size
 
 ## Past solution
 
@@ -25,20 +46,6 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * Individual models get 99.5-99.9%
 * Single model submission score - 1.03804
 * Ensemble submission score - 0.38794
-
-### Current Train Augmentation
-* Pad images with 16 pixels
-* Random crops of original image size
-* Random color intensity for each channel -15,15 (uniform)
-* Random rotations between -15,15 degrees (uniform)
-* Random shear between -5,5 degrees (uniform)
-* Random image brightness aug 90-110% (uniform)
-
-### Current Test Augmentation
-* Pad images with 8 pixels
-* Random crops of original image size
-* Random color intensity for each channel -5,5 (uniform)
-* Random image brightness aug 95-105% (uniform)
 
 ### Old augmentation
 * rotation - (-15,15)

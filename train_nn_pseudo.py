@@ -119,7 +119,7 @@ try:
         # do the training
         start = time.time()
 
-        train_loss = batch_iterator_train_pseudo_label(train_X, train_y, pseudo_X, pseudo_labels, BATCHSIZE, 20, train_fn)
+        train_loss = batch_iterator_train_pseudo_label(train_X, train_y, pseudo_X, pseudo_labels, BATCHSIZE, train_fn)
         train_eval.append(train_loss)
 
         valid_loss, acc_v = batch_iterator_valid(test_X, test_y, BATCHSIZE, valid_fn)

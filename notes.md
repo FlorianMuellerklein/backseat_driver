@@ -19,8 +19,9 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * Mean-pixel centering
 * Projection option
 * Individual (naive cv) accuracy - 99.7%
-* Local CV (naive) loss - 0.013
-* Submission LB score - 0.19
+* Local CV (naive) loss - 0.006 to 0.013764
+* Submission single model LB score - 0.19
+* Submission ensemble of 10 - 0.18454
 * Time per epoch - 131 seconds
 
 ### Current Train Augmentation

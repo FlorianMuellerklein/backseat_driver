@@ -88,7 +88,7 @@ def fast_warp(img, tf, output_shape, mode='constant', cval=0.0):
 
 print 'Running TTA ... '
 tta_iter = 1
-for _ in range(30):
+for _ in range(20):
     print tta_iter
     predictions_tta = []
     for i in range((X_test.shape[0] + BATCHSIZE - 1) // BATCHSIZE):
@@ -132,7 +132,7 @@ for _ in range(30):
         for j in range(X_batch.shape[0]):
             # for each image channel
             for k in range(X_batch.shape[1]):
-                X_batch_aug[j,k] = fast_warp(X_batch_aug[j,k], tform, output_shape=(PIXELS,PIXELS))
+                #X_batch_aug[j,k] = fast_warp(X_batch_aug[j,k], tform, output_shape=(PIXELS,PIXELS))
                 # pad and crop images
                 img_pad = np.pad(X_batch_aug[j,k], pad_width=((PAD_CROP,PAD_CROP), (PAD_CROP,PAD_CROP)), mode='constant')
                 X_batch_aug[j,k] = img_pad[crop_x1:crop_x2, crop_y1:crop_y2]
@@ -183,18 +183,8 @@ tta_sub_17 = np.load('data/tta_temp/predictions_tta_17.npy')
 tta_sub_18 = np.load('data/tta_temp/predictions_tta_18.npy')
 tta_sub_19 = np.load('data/tta_temp/predictions_tta_19.npy')
 tta_sub_20 = np.load('data/tta_temp/predictions_tta_20.npy')
-tta_sub_21 = np.load('data/tta_temp/predictions_tta_21.npy')
-tta_sub_22 = np.load('data/tta_temp/predictions_tta_22.npy')
-tta_sub_23 = np.load('data/tta_temp/predictions_tta_23.npy')
-tta_sub_24 = np.load('data/tta_temp/predictions_tta_24.npy')
-tta_sub_25 = np.load('data/tta_temp/predictions_tta_25.npy')
-tta_sub_26 = np.load('data/tta_temp/predictions_tta_26.npy')
-tta_sub_27 = np.load('data/tta_temp/predictions_tta_27.npy')
-tta_sub_28 = np.load('data/tta_temp/predictions_tta_28.npy')
-tta_sub_29 = np.load('data/tta_temp/predictions_tta_29.npy')
-tta_sub_30 = np.load('data/tta_temp/predictions_tta_30.npy')
 
-predictions = (tta_sub_1 + tta_sub_2 + tta_sub_3 + tta_sub_4 + tta_sub_5 + tta_sub_6 + tta_sub_7 + tta_sub_8 + tta_sub_9 + tta_sub_10 + tta_sub_11 + tta_sub_12 + tta_sub_13 + tta_sub_14 + tta_sub_15 + tta_sub_16 + tta_sub_17 + tta_sub_18 + tta_sub_19 + tta_sub_20 + tta_sub_21 + tta_sub_22 + tta_sub_23 + tta_sub_24 + tta_sub_25 + tta_sub_26 + tta_sub_27 + tta_sub_28 + tta_sub_29 + tta_sub_30) / 30.0
+predictions = (tta_sub_1 + tta_sub_2 + tta_sub_3 + tta_sub_4 + tta_sub_5 + tta_sub_6 + tta_sub_7 + tta_sub_8 + tta_sub_9 + tta_sub_10 + tta_sub_11 + tta_sub_12 + tta_sub_13 + tta_sub_14 + tta_sub_15 + tta_sub_16 + tta_sub_17 + tta_sub_18 + tta_sub_19 + tta_sub_20) / 20.0
 
 
 

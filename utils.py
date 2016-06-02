@@ -215,7 +215,7 @@ def load_test_efficient(cache=False, size=PIXELS, grayscale=False):
 def load_pseudo(cache=True, size=PIXELS):
     if cache:
         X_test = np.load('data/cache/X_test_%d_f32.npy'%PIXELS)
-        pseudos = np.load('data/cache/pseudo_labels_test.npy')
+        pseudos = np.load('data/cache/pseudo_labels_test_ResNet82_vgg.npy')
     else:
         # don't know why it wouldn't already be cached
         # if not add lines 123 to 136

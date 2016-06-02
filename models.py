@@ -358,7 +358,7 @@ def ResNet_FullPre_Wide(input_var=None, n=5, k=2):
         # contains the weight -> BN -> ReLU portion, steps 3 to 5
         conv_1 = batch_norm(ConvLayer(bn_pre_relu, num_filters=filters, filter_size=(3,3), stride=first_stride, nonlinearity=rectify, pad='same', W=he_norm))
 
-        dropout = DropoutLayer(conv_1, p=0.5)
+        dropout = DropoutLayer(conv_1, p=0.25)
 
         # contains the last weight portion, step 6
         conv_2 = ConvLayer(dropout, num_filters=filters, filter_size=(3,3), stride=(1,1), nonlinearity=None, pad='same', W=he_norm)
@@ -426,7 +426,7 @@ def ResNet_FullPre_Wide(input_var=None, n=5, k=2):
 
 # ========================================================================================================================
 
-def ResNet_FullPre_Trans(input_var=None, n=5):
+def ST_ResNet_FullPre(input_var=None, n=5):
     '''
     Spatial Transformer ResNet
     'Spatial Transformer Networks', Max Jaderberg, Karen Simonyan, Andrew Zisserman, Koray Kavukcuoglu (https://arxiv.org/pdf/1506.02025v3.pdf)

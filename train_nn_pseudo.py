@@ -13,8 +13,8 @@ from lasagne.nonlinearities import softmax
 
 from sklearn.preprocessing import LabelEncoder, LabelBinarizer
 
-from models import vgg16, ResNet_Orig, ResNet_FullPre, ResNet_BttlNck_FullPre, ResNet_Orig_ELU
-from utils import load_train_cv, batch_iterator_train_pseudo_label, batch_iterator_valid, load_pseudo, batch_iterator_train_pseudo_label
+from models import ST_ResNet_FullPre, ResNet_FullPre, ResNet_FullPre_Wide
+from utils import load_train_cv, batch_iterator_train_pseudo_label, batch_iterator_valid, load_pseudo
 from crossvalidation import load_cv_fold
 
 from matplotlib import pyplot
@@ -32,8 +32,8 @@ BATCHSIZE = args.batchsize
 
 LR_SCHEDULE = {
     0: 0.001,
-    60: 0.0001,
-    85: 0.00001
+    72: 0.0001,
+    102: 0.00001
 }
 
 #encoder = LabelEncoder()

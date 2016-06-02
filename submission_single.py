@@ -42,7 +42,7 @@ X = T.tensor4('X')
 Y = T.ivector('y')
 
 # set up theano functions to generate output by feeding data through network, any test outputs should be deterministic
-output_layer = ResNet_FullPre(X, n=5)
+output_layer = ResNet_FullPr(X, n=5)
 
 output_test = lasagne.layers.get_output(output_layer, deterministic=True)
 

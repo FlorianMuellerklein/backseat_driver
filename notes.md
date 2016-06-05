@@ -76,6 +76,25 @@ Given a dataset of 2D dashboard camera images, State Farm is challenging Kaggler
 * Submission score - 0.41797 -> 0.49150
 * Time per epoch - 174.7 seconds
 
+### ST-ResNet-82
+* 128x128 Image size
+* Initial filter num - 16
+* Initial filter size - 5x5, stride 1
+* No maxpool after first filter
+* FullPreActivation
+* Batch size - 64
+* L2 regularization - 0.00001 (less than paper)
+* Dropout after GlobalPoolLayer p=0.25
+* ADAM for 100 epoch - lr_schedule = {0:0.001, 60:0.0001, 80:0.00001}
+* Heavy Train Augmentations
+* Trans TTA
+* Mean-pixel centering
+* Projection option
+* ST layer is PreResNet with initial filter num 16, 7x7 stride 2, followed by maxpool 3x3
+* ST Net has four residual blocks
+* Individual LB score with pseudo labels is 0.187
+* Time per epoch - 174.7 seconds
+
 ### ResNet-42 More train and test aug (best single model so far)
 * 128x128 Image size
 * Initial filter num - 16

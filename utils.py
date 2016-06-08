@@ -386,8 +386,8 @@ def batch_iterator_train_pseudo_label(data, y, pdata, py, BATCHSIZE, train_fn):
         # brightness settings
         bright = random.uniform(0.9,1.1)
 
-        # flip left-right choice
-        #flip_lr = random.randint(0,1)
+        # random zooms
+        zoom = random.uniform(0.8, 1.2)
 
         # set the transform parameters for skimage.transform.warp
         # have to shift to center and then shift back after transformation otherwise
@@ -397,6 +397,7 @@ def batch_iterator_train_pseudo_label(data, y, pdata, py, BATCHSIZE, train_fn):
         tform_uncenter = transform.SimilarityTransform(translation=center_shift)
 
         tform_aug = transform.AffineTransform(shear = np.deg2rad(shear_deg),
+                                              scale = (1/zoom, 1/zoom),
                                               rotation = np.deg2rad(dorotate))
 
         tform = tform_center + tform_aug + tform_uncenter

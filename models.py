@@ -321,10 +321,10 @@ def ResNet_FullPre(input_var=None, n=5):
     #l_hidden2 = batch_norm(DenseLayer(l_hidden1, num_units=1024, W=he_norm, nonlinearity=rectify))
 
     # dropout
-    dropout = DropoutLayer(avg_pool, p=0.25)
+    #dropout = DropoutLayer(avg_pool, p=0.25)
 
     # fully connected layer
-    network = DenseLayer(dropout, num_units=10, W=HeNormal(), nonlinearity=softmax)
+    network = DenseLayer(avg_pool, num_units=10, W=HeNormal(), nonlinearity=softmax)
 
     return network
 
@@ -358,7 +358,7 @@ def ResNet_FullPre_Wide(input_var=None, n=5, k=2):
         # contains the weight -> BN -> ReLU portion, steps 3 to 5
         conv_1 = batch_norm(ConvLayer(bn_pre_relu, num_filters=filters, filter_size=(3,3), stride=first_stride, nonlinearity=rectify, pad='same', W=he_norm))
 
-        dropout = DropoutLayer(conv_1, p=0.25)
+        dropout = DropoutLayer(conv_1, p=0.15)
 
         # contains the last weight portion, step 6
         conv_2 = ConvLayer(dropout, num_filters=filters, filter_size=(3,3), stride=(1,1), nonlinearity=None, pad='same', W=he_norm)
@@ -458,10 +458,8 @@ def ST_ResNet_FullPre(input_var=None, n=5):
         # contains the weight -> BN -> ReLU portion, steps 3 to 5
         conv_1 = batch_norm(ConvLayer(bn_pre_relu, num_filters=filters, filter_size=(3,3), stride=first_stride, nonlinearity=rectify, pad='same', W=he_norm))
 
-        dropout = DropoutLayer(conv_1, p=0.25)
-
         # contains the last weight portion, step 6
-        conv_2 = ConvLayer(dropout, num_filters=filters, filter_size=(3,3), stride=(1,1), nonlinearity=None, pad='same', W=he_norm)
+        conv_2 = ConvLayer(conv_1, num_filters=filters, filter_size=(3,3), stride=(1,1), nonlinearity=None, pad='same', W=he_norm)
 
         # add shortcut connections
         if increase_dim:
@@ -484,8 +482,8 @@ def ST_ResNet_FullPre(input_var=None, n=5):
     b[1, 1] = 1
     b = b.flatten()
 
-    loc_conv1 = batch_norm(ConvLayer(l_in, num_filters=16, filter_size=(7,7), stride=(2,2), nonlinearity=rectify, pad='same', W=he_norm))
-    loc_pool = MaxPool2DLayer(loc_conv1, pool_size=(2,2))
+    loc_conv1 = batch_norm(ConvLayer(l_in, num_filters=n_filters[0], filter_size=(7,7), stride=(2,2), nonlinearity=rectify, pad='same', W=he_norm))
+    loc_pool = MaxPool2DLayer(loc_conv1, pool_size=(3,3))
 
     loc_conv2 = residual_block(loc_pool, first=True, filters=n_filters[0])
     loc_conv3 = residual_block(loc_conv2, filters=n_filters[0])
@@ -504,6 +502,7 @@ def ST_ResNet_FullPre(input_var=None, n=5):
     # Transformer network
     l_trans1 = TransformerLayer(l_in, loc_out, downsample_factor=1.0)
 
+    # Classifier Network
     # first layer, output is 16 x 64 x 64
     l = batch_norm(ConvLayer(l_trans1, num_filters=16, filter_size=(5,5), stride=(1,1), nonlinearity=rectify, pad='same', W=he_norm))
     l = MaxPool2DLayer(l, pool_size=2)

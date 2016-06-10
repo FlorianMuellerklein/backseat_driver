@@ -412,15 +412,11 @@ def ResNet_FullPre_Wide(input_var=None, n=5, k=2):
     # average pooling
     avg_pool = GlobalPoolLayer(bn_post_relu)
 
-    # FC should be alternative to avg_pool
-    #l_hidden1 = batch_norm(DenseLayer(avg_pool, num_units=1024, W=he_norm, nonlinearity=rectify))
-    #l_hidden2 = batch_norm(DenseLayer(l_hidden1, num_units=1024, W=he_norm, nonlinearity=rectify))
-
     # dropout
-    #dropout = DropoutLayer(avg_pool, p=0.25)
+    dropout_last = DropoutLayer(avg_pool, p=0.25)
 
     # fully connected layer
-    network = DenseLayer(avg_pool, num_units=10, W=HeNormal(), nonlinearity=softmax)
+    network = DenseLayer(dropout_last, num_units=10, W=HeNormal(), nonlinearity=softmax)
 
     return network
 
@@ -487,11 +483,17 @@ def ST_ResNet_FullPre(input_var=None, n=5):
 
     loc_conv2 = residual_block(loc_pool, first=True, filters=n_filters[0])
     loc_conv3 = residual_block(loc_conv2, filters=n_filters[0])
+    loc_conv4 = residual_block(loc_conv3, filters=n_filters[0])
 
-    loc_conv4 = residual_block(loc_conv3, increase_dim=True, filters=n_filters[1])
-    loc_conv5 = residual_block(loc_conv4, filters=n_filters[1])
+    loc_conv5 = residual_block(loc_conv4, increase_dim=True, filters=n_filters[1])
+    loc_conv6 = residual_block(loc_conv5, filters=n_filters[1])
+    loc_conv7 = residual_block(loc_conv6, filters=n_filters[1])
 
-    loc_bn_post_conv = BatchNormLayer(loc_conv5)
+    loc_conv8 = residual_block(loc_conv7, increase_dim=True, filters=n_filters[2])
+    loc_conv9 = residual_block(loc_conv8, filters=n_filters[2])
+    loc_conv10 = residual_block(loc_conv9, filters=n_filters[2])
+
+    loc_bn_post_conv = BatchNormLayer(loc_conv10)
     loc_bn_post_relu = NonlinearityLayer(loc_bn_post_conv, rectify)
 
     # average pooling
@@ -533,8 +535,11 @@ def ST_ResNet_FullPre(input_var=None, n=5):
     # average pooling
     avg_pool = GlobalPoolLayer(bn_post_relu)
 
+    # dropout
+    dropout = DropoutLayer(avg_pool, p=0.25)
+
     # fully connected layer
-    network = DenseLayer(avg_pool, num_units=10, W=HeNormal(), nonlinearity=softmax)
+    network = DenseLayer(dropout, num_units=10, W=HeNormal(), nonlinearity=softmax)
 
     return network
 

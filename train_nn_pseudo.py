@@ -32,8 +32,8 @@ BATCHSIZE = args.batchsize
 
 LR_SCHEDULE = {
     0: 0.001,
-    72: 0.0001,
-    102: 0.00001
+    60: 0.0001,
+    80: 0.00001
 }
 
 #encoder = LabelEncoder()
@@ -57,7 +57,7 @@ def pseudo_log_loss(pred, y, eps=1e-15):
 
 # set up theano functions to generate output by feeding data through network, any test outputs should be deterministic
 # load model
-output_layer = ResNet_FullPre(X, n=5)
+output_layer = ST_ResNet_FullPre(X, n=5)
 
 # create outputs
 output_train = lasagne.layers.get_output(output_layer)

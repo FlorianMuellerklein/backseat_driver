@@ -215,7 +215,7 @@ def load_test_efficient(cache=False, size=PIXELS, grayscale=False):
 def load_pseudo(cache=True, size=PIXELS):
     if cache:
         X_test = np.load('data/cache/X_test_%d_f32.npy'%PIXELS)
-        pseudos = np.load('data/cache/pseudo_labels_test_ResNet82_vgg.npy')
+        pseudos = np.load('data/cache/pseudo_18078.npy')
     else:
         # don't know why it wouldn't already be cached
         # if not add lines 123 to 136
@@ -343,7 +343,7 @@ def batch_iterator_train_pseudo_label(data, y, pdata, py, BATCHSIZE, train_fn):
     Batch iterator for training wiht pseudo soft targets
     For total batch size 32, take 22 from train, and 10 from labeled test
     '''
-    pBATCHSIZE = int(round(BATCHSIZE * 0.31))
+    pBATCHSIZE = int(round(BATCHSIZE * 0.25))
     BATCHSIZE -= pBATCHSIZE
     n_samples = data.shape[0]
     #data, y = shuffle(data, y)

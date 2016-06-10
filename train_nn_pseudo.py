@@ -147,7 +147,7 @@ f.close()
 
 last_params = helper.get_all_param_values(output_layer)
 f = gzip.open('data/weights/%s_last.pklz'%experiment_label, 'wb')
-pickle.dump(best_params, f)
+pickle.dump(last_params, f)
 f.close()
 
 # plot loss and accuracy

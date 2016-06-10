@@ -1,36 +1,36 @@
-
-import os
-import cv2
-import glob
 import gzip
-import math
 import time
-import random
 import pickle
 import numpy as np
-import pandas as pd
-
-from sklearn.utils import shuffle
-from sklearn.preprocessing import LabelEncoder
-from sklearn.cross_validation import train_test_split
-
-import lasagne
-from lasagne.updates import nesterov_momentum, adam
-from lasagne.layers import helper
-from lasagne.layers import DenseLayer
-from lasagne.nonlinearities import softmax
 
 import theano
 from theano import tensor as T
 
+import lasagne
+from lasagne.updates import nesterov_momentum, adam
+from lasagne.layers import helper, DenseLayer
+from lasagne.nonlinearities import softmax
+
 from sklearn.preprocessing import LabelEncoder
 
-from models import blvc_googlenet, inception_v3
-from utils import load_train_cv, load_test
-from utils import batch_iterator_train_noaug, batch_iterator_valid, batch_iterator_train_crop_flip_color
+from models import blvc_googlenet
+from models import ST_ResNet_FullPre, ResNet_FullPre, ResNet_FullPre_Wide
+from utils import load_train_cv, batch_iterator_train_pseudo_label, batch_iterator_valid, load_pseudo
+from crossvalidation import load_cv_fold
 
-ITERS = 10
-BATCHSIZE = 32
+from matplotlib import pyplot
+import warnings
+warnings.filterwarnings("ignore")
+
+import argparsing
+args, unknown_args = argparsing.parse_args()
+
+# training params
+experiment_label = args.label
+PIXELS = args.pixels
+ITERS = args.epochs
+BATCHSIZE = args.batchsize
+
 LR_SCHEDULE = {
     0: 0.0001
 }
@@ -124,7 +124,14 @@ except KeyboardInterrupt:
 
 print "Final Acc:", best_acc
 
+print "Best Valid Loss:", best_vl
+
 # save weights
-f = gzip.open('data/pre_trained_weights/blvc_googlenet_finetune.pklz', 'wb')
+f = gzip.open('data/weights/%s_best.pklz'%experiment_label, 'wb')
 pickle.dump(best_params, f)
+f.close()
+
+last_params = helper.get_all_param_values(output_layer)
+f = gzip.open('data/weights/%s_last.pklz'%experiment_label, 'wb')
+pickle.dump(last_params, f)
 f.close()

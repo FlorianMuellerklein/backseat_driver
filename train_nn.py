@@ -14,8 +14,8 @@ from lasagne.nonlinearities import softmax
 from sklearn.preprocessing import LabelEncoder, LabelBinarizer
 from sklearn.metrics import confusion_matrix
 
-from models import ResNet_FullPre, ResNet_FullPre_Wide, ResNet_Wide_Trans
-from utils import load_train_cv, batch_iterator_train, batch_iterator_valid, load_pseudo, batch_iterator_train_pseudo_label
+from models import ResNet_FullPre, ResNet_FullPre_Wide, ResNet_FullPre_Trans
+from utils import load_train_cv, batch_iterator_train, batch_iterator_valid, load_pseudo, batch_iterator_train_noaug
 from crossvalidation import load_cv_fold
 
 from matplotlib import pyplot
@@ -32,9 +32,9 @@ ITERS = args.epochs
 BATCHSIZE = args.batchsize
 
 LR_SCHEDULE = {
-    0: 0.0001,
-    80: 0.00001,
-    120: 0.000001
+    0: 0.001,
+    60: 0.0001,
+    85: 0.00001
 }
 
 encoder = LabelEncoder()
@@ -47,7 +47,7 @@ Y = T.ivector('y')
 
 # set up theano functions to generate output by feeding data through network, any test outputs should be deterministic
 # load model
-output_layer = ResNet_Wide_Trans(X, n=3, k=5)
+output_layer = ResNet_FullPre_Wide(X, n=2, k=3)
 
 # create outputs
 output_train = lasagne.layers.get_output(output_layer)
@@ -87,8 +87,8 @@ load training data and start training
 '''
 
 # load the training and validation data sets
-train_X, train_y, test_X, test_y, encoder = load_train_cv(encoder, cache=True, relabel=False)
-#train_X, train_y, test_X, test_y, encoder = load_cv_fold(encoder, args.fold)
+#train_X, train_y, test_X, test_y, encoder = load_train_cv(encoder, cache=True, relabel=False)
+train_X, train_y, test_X, test_y, encoder = load_cv_fold(encoder, args.fold)
 print 'Train shape:', train_X.shape, 'Test shape:', test_X.shape
 print 'Train y shape:', train_y.shape, 'Test y shape:', test_y.shape
 print np.amax(train_X), np.amin(train_X), np.mean(train_X)
@@ -107,7 +107,7 @@ try:
         start = time.time()
 
         train_loss = batch_iterator_train(train_X, train_y, BATCHSIZE, train_fn)
-        #train_loss = batch_iterator_train_pseudo_label(train_X, train_y, pseudo_X, pseudo_labels, BATCHSIZE, train_fn)
+        #train_loss = batch_iterator_train_noaug(train_X, train_y, BATCHSIZE, train_fn)
         train_eval.append(train_loss)
 
         valid_loss, acc_v = batch_iterator_valid(test_X, test_y, 4, valid_fn)
@@ -135,7 +135,7 @@ f.close()
 
 last_params = helper.get_all_param_values(output_layer)
 f = gzip.open('data/weights/%s_last.pklz'%experiment_label, 'wb')
-pickle.dump(best_params, f)
+pickle.dump(last_params, f)
 f.close()
 
 # plot loss and accuracy

@@ -744,7 +744,7 @@ def build_inception_module(name, input_layer, nfilters):
     return {'{}/{}'.format(name, k): v for k, v in net.items()}
 
 
-def blvc_googlenet(input_var=None):
+def bvlc_googlenet(input_var=None):
     net = {}
     net['input'] = InputLayer((None, 3, None, None), input_var=input_var)
     net['conv1/7x7_s2'] = ConvLayer(

@@ -13,7 +13,7 @@ from lasagne.nonlinearities import softmax
 
 from sklearn.preprocessing import LabelEncoder
 
-from models import blvc_googlenet
+from models import bvlc_googlenet
 from models import ST_ResNet_FullPre, ResNet_FullPre, ResNet_FullPre_Wide
 from utils import load_train_cv, batch_iterator_train_pseudo_label, batch_iterator_valid, load_pseudo
 from crossvalidation import load_cv_fold
@@ -24,6 +24,8 @@ warnings.filterwarnings("ignore")
 
 import argparsing
 args, unknown_args = argparsing.parse_args()
+
+#TODO: Get pixel mean or Whatever preproc values they used for GoogLeNet and ImageNet
 
 # training params
 experiment_label = args.label
@@ -46,7 +48,7 @@ X = T.tensor4('X')
 Y = T.ivector('y')
 
 # set up theano functions to generate output by feeding data through network, any test outputs should be deterministic
-net = blvc_googlenet(X)
+net = bvlc_googlenet(X)
 # load network weights
 d = pickle.load(open('data/pre_trained_weights/blvc_googlenet.pkl'))
 helper.set_all_param_values(net['prob'], d['param values'])

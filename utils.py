@@ -26,8 +26,6 @@ PAD_PIXELS = PIXELS + (PAD_CROP * 2)
 imageSize = PIXELS * PIXELS
 num_features = imageSize * 3
 
-tsne = TSNE(verbose=1)
-
 def load_train_cv(encoder, cache=False, relabel=False):
     if cache:
         X_train = np.load('data/cache/X_train_%d_f32_clean.npy'%PIXELS)

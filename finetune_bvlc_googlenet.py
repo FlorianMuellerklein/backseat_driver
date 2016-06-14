@@ -15,7 +15,7 @@ from sklearn.preprocessing import LabelEncoder
 
 from models import bvlc_googlenet
 from models import ST_ResNet_FullPre, ResNet_FullPre, ResNet_FullPre_Wide
-from utils import load_train_cv, batch_iterator_train_pseudo_label, batch_iterator_valid, load_pseudo
+from utils import load_train_cv, batch_iterator_train, batch_iterator_valid, load_pseudo
 from crossvalidation import load_cv_fold
 
 from matplotlib import pyplot
@@ -34,7 +34,8 @@ ITERS = args.epochs
 BATCHSIZE = args.batchsize
 
 LR_SCHEDULE = {
-    0: 0.0001
+    0: 0.001,
+    10: 0.0001
 }
 
 PIXELS = 224
@@ -73,7 +74,7 @@ valid_acc = T.mean(T.eq(T.argmax(output_test, axis=1), Y), dtype=theano.config.f
 # get parameters from network and set up sgd with nesterov momentum to update parameters
 l_r = theano.shared(np.array(LR_SCHEDULE[0], dtype=theano.config.floatX))
 params = lasagne.layers.get_all_params(output_layer, trainable=True)
-updates = adam(loss, params, learning_rate=l_r)
+updates = nesterov_momentum(loss, params, learning_rate=l_r)
 
 # set up training and prediction functions
 train_fn = theano.function(inputs=[X,Y], outputs=loss, updates=updates)
@@ -87,10 +88,10 @@ load training data and start training
 '''
 encoder = LabelEncoder()
 
-train_X, train_y, test_X, test_y, encoder = load_train_cv(encoder, cache=False, relabel=False)
+train_X, train_y, test_X, test_y, encoder = load_train_cv(encoder, cache=True, relabel=False)
 print 'Train shape:', train_X.shape, 'Test shape:', test_X.shape
 print 'Train y shape:', train_y.shape, 'Test y shape:', test_y.shape
-print np.amax(train_X)
+print np.amax(train_X), np.amin(train_X), np.mean(train_X)
 
 # loop over training functions for however many iterations, print information while training
 train_eval = []
@@ -125,8 +126,6 @@ except KeyboardInterrupt:
     pass
 
 print "Final Acc:", best_acc
-
-print "Best Valid Loss:", best_vl
 
 # save weights
 f = gzip.open('data/weights/%s_best.pklz'%experiment_label, 'wb')

@@ -90,12 +90,14 @@ for _ in range(20):
     path = os.path.join('data', 'imgs', 'test', '*.jpg')
     files = glob.glob(path)
     predictions_tta = []
+    X_test_id = []
     for fl in files:
         flbase = os.path.basename(fl)
         img = imread(fl)
         img = transform.resize(img, output_shape=(PIXELS, PIXELS, 3), preserve_range=True)
         img = img.transpose(2, 0, 1)
         img = img.astype('float32')
+        X_test_id.append(flbase)
 
         # pad and crop settings
         trans_1 = random.randint(0, (PAD_CROP*2))
@@ -156,6 +158,9 @@ for _ in range(20):
         # fit model on each batch
         predictions_tta.extend(predict_proba(img_pred))
 
+    X_test_id = np.array(X_test_id)
+    np.save('data/cache/X_test_id_%d_f32.npy'%PIXELS, X_test_id)
+
     predictions_tta = np.array(predictions_tta)
     np.save('data/tta_temp/predictions_tta_' + str(tta_iter) + '.npy', predictions_tta)
 
@@ -175,20 +180,11 @@ tta_sub_7 = np.load('data/tta_temp/predictions_tta_7.npy')
 tta_sub_8 = np.load('data/tta_temp/predictions_tta_8.npy')
 tta_sub_9 = np.load('data/tta_temp/predictions_tta_9.npy')
 tta_sub_10 = np.load('data/tta_temp/predictions_tta_10.npy')
-tta_sub_11 = np.load('data/tta_temp/predictions_tta_11.npy')
-tta_sub_12 = np.load('data/tta_temp/predictions_tta_12.npy')
-tta_sub_13 = np.load('data/tta_temp/predictions_tta_13.npy')
-tta_sub_14 = np.load('data/tta_temp/predictions_tta_14.npy')
-tta_sub_15 = np.load('data/tta_temp/predictions_tta_15.npy')
-tta_sub_16 = np.load('data/tta_temp/predictions_tta_16.npy')
-tta_sub_17 = np.load('data/tta_temp/predictions_tta_17.npy')
-tta_sub_18 = np.load('data/tta_temp/predictions_tta_18.npy')
-tta_sub_19 = np.load('data/tta_temp/predictions_tta_19.npy')
-tta_sub_20 = np.load('data/tta_temp/predictions_tta_20.npy')
-
-predictions = (tta_sub_1 + tta_sub_2 + tta_sub_3 + tta_sub_4 + tta_sub_5 + tta_sub_6 + tta_sub_7 + tta_sub_8 + tta_sub_9 + tta_sub_10 + tta_sub_11 + tta_sub_12 + tta_sub_13 + tta_sub_14 + tta_sub_15 + tta_sub_16 + tta_sub_17 + tta_sub_18 + tta_sub_19 + tta_sub_20) / 20.0
 
 
+predictions = (tta_sub_1 + tta_sub_2 + tta_sub_3 + tta_sub_4 + tta_sub_5 + tta_sub_6 + tta_sub_7 + tta_sub_8 + tta_sub_9 + tta_sub_10) / 10.0
+
+test_id = np.load('data/cache/X_test_id_%d_f32.npy'%PIXELS)
 
 '''
 Make submission file

@@ -35,7 +35,8 @@ BATCHSIZE = args.batchsize
 
 LR_SCHEDULE = {
     0: 0.001,
-    10: 0.0001
+    10: 0.0001,
+    20: 0.00001
 }
 
 PIXELS = 224

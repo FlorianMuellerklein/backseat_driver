@@ -802,6 +802,62 @@ def bvlc_googlenet(input_var=None):
                                     nonlinearity=softmax)
     return net
 
+def bvlc_googlenet_submission(input_var=None):
+    net = {}
+    net['input'] = InputLayer((None, 3, None, None), input_var=input_var)
+    net['conv1/7x7_s2'] = ConvLayer(
+        net['input'], 64, 7, stride=2, pad=3, flip_filters=False)
+    net['pool1/3x3_s2'] = MaxPool2DLayer(
+        net['conv1/7x7_s2'], pool_size=3, stride=2, ignore_border=False)
+    net['pool1/norm1'] = LRNLayer(net['pool1/3x3_s2'], alpha=0.00002, k=1)
+    net['conv2/3x3_reduce'] = ConvLayer(
+        net['pool1/norm1'], 64, 1, flip_filters=False)
+    net['conv2/3x3'] = ConvLayer(
+        net['conv2/3x3_reduce'], 192, 3, pad=1, flip_filters=False)
+    net['conv2/norm2'] = LRNLayer(net['conv2/3x3'], alpha=0.00002, k=1)
+    net['pool2/3x3_s2'] = MaxPool2DLayer(
+      net['conv2/norm2'], pool_size=3, stride=2, ignore_border=False)
+
+    net.update(build_inception_module('inception_3a',
+                                      net['pool2/3x3_s2'],
+                                      [32, 64, 96, 128, 16, 32]))
+    net.update(build_inception_module('inception_3b',
+                                      net['inception_3a/output'],
+                                      [64, 128, 128, 192, 32, 96]))
+    net['pool3/3x3_s2'] = MaxPool2DLayer(
+      net['inception_3b/output'], pool_size=3, stride=2, ignore_border=False)
+
+    net.update(build_inception_module('inception_4a',
+                                      net['pool3/3x3_s2'],
+                                      [64, 192, 96, 208, 16, 48]))
+    net.update(build_inception_module('inception_4b',
+                                      net['inception_4a/output'],
+                                      [64, 160, 112, 224, 24, 64]))
+    net.update(build_inception_module('inception_4c',
+                                      net['inception_4b/output'],
+                                      [64, 128, 128, 256, 24, 64]))
+    net.update(build_inception_module('inception_4d',
+                                      net['inception_4c/output'],
+                                      [64, 112, 144, 288, 32, 64]))
+    net.update(build_inception_module('inception_4e',
+                                      net['inception_4d/output'],
+                                      [128, 256, 160, 320, 32, 128]))
+    net['pool4/3x3_s2'] = MaxPool2DLayer(
+      net['inception_4e/output'], pool_size=3, stride=2, ignore_border=False)
+
+    net.update(build_inception_module('inception_5a',
+                                      net['pool4/3x3_s2'],
+                                      [128, 256, 160, 320, 32, 128]))
+    net.update(build_inception_module('inception_5b',
+                                      net['inception_5a/output'],
+                                      [128, 384, 192, 384, 48, 128]))
+
+    net['pool5/7x7_s1'] = GlobalPoolLayer(net['inception_5b/output'])
+
+    output_layer = DenseLayer(net['pool5/7x7_s1'], num_units=10, W=lasagne.init.HeNormal(), nonlinearity=softmax)
+
+    return output_layer
+
 # ========================================================================================================================
 
 # Inception-v3, model from the paper:

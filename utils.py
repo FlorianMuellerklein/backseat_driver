@@ -26,13 +26,10 @@ PAD_PIXELS = PIXELS + (PAD_CROP * 2)
 imageSize = PIXELS * PIXELS
 num_features = imageSize * 3
 
-def load_train_cv(encoder, cache=False, relabel=False):
+def load_train_cv(encoder, cache=False):
     if cache:
         X_train = np.load('data/cache/X_train_%d_f32_clean.npy'%PIXELS)
-        if relabel:
-            y_train = np.load('data/cache/y_train_%d_f32_relabel.npy'%PIXELS)
-        else:
-            y_train = np.load('data/cache/y_train_%d_f32_clean.npy'%PIXELS)
+        y_train = np.load('data/cache/y_train_%d_f32_clean.npy'%PIXELS)
     else:
         X_train = []
         y_train = []
@@ -70,12 +67,25 @@ def load_train_cv(encoder, cache=False, relabel=False):
     X_train = X_train.reshape(X_train.shape[0], 3, PIXELS, PIXELS)
     X_test = X_test.reshape(X_test.shape[0], 3, PIXELS, PIXELS)
 
-    # subtract per-pixel mean
-    #pixel_mean = np.mean(X_train, axis=0)
-    #np.save('data/pixel_mean_full_%d.npy'%PIXELS, pixel_mean)
-    pixel_mean = np.load('data/pixel_mean_full_%d.npy'%PIXELS)
-    X_train -= pixel_mean
-    X_test -= pixel_mean
+    # pixels of 224 are only used for finetuning pretrained networks so we use ImageNet channel means
+    if PIXELS == 224:
+        mean_pixel = [103.939, 116.779, 123.68]
+        for c in range(3):
+            X_train[:, c, :, :] = X_train[:, c, :, :] - mean_pixel[c]
+            X_test[:, c, :, :] = X_test[:, c, :, :] - mean_pixel[c]
+    elif PIXELS == 299:
+        X_train -= 128
+        X_train /= 128
+        X_test -= 128
+        X_test /= 128
+
+    else:
+        # subtract per-pixel mean
+        #pixel_mean = np.mean(X_train, axis=0)
+        #np.save('data/pixel_mean_full_%d.npy'%PIXELS, pixel_mean)
+        pixel_mean = np.load('data/pixel_mean_full_%d.npy'%PIXELS)
+        X_train -= pixel_mean
+        X_test -= pixel_mean
 
     return X_train, y_train, X_test, y_test, encoder
 
@@ -134,14 +144,24 @@ def load_test(cache=False, size=PIXELS):
         for fl in files:
             print(fl)
             flbase = os.path.basename(fl)
-            img = imread(fl, as_grey = True)
+            img = imread(fl)
             img = transform.resize(img, output_shape=(PIXELS, PIXELS, 3), preserve_range=True)
             img = img.transpose(2, 0, 1)
             img = np.reshape(img, (1, num_features))
+            if PIXELS == 224:
+                img = img.astype('float16')
             X_test.append(img)
             X_test_id.append(flbase)
 
-        X_test = np.array(X_test, dtype='float32')
+        if PIXELS == 224:
+            X_test = np.array(X_test, dtype='float16')
+        elif PIXELS == 299:
+            X_train -= 128
+            X_train /= 128
+            X_test -= 128
+            X_test /= 128
+        else:
+            X_test = np.array(X_test, dtype='float32')
         X_test_id = np.array(X_test_id)
 
         np.save('data/cache/X_test_%d_f32.npy'%PIXELS, X_test)
@@ -149,9 +169,16 @@ def load_test(cache=False, size=PIXELS):
 
     X_test = X_test.reshape(X_test.shape[0], 3, PIXELS, PIXELS)
 
-    # subtract pixel mean
-    pixel_mean = np.load('data/pixel_mean_full_%d.npy'%PIXELS)
-    X_test -= pixel_mean
+
+    # pixels of 224 are only used for finetuning pretrained networks so we use ImageNet channel means
+    if PIXELS == 224:
+        mean_pixel = [103.939, 116.779, 123.68]
+        for c in range(3):
+            X_test[:, c, :, :] = X_test[:, c, :, :] - mean_pixel[c]
+    else:
+        # subtract pixel mean
+        pixel_mean = np.load('data/pixel_mean_full_%d.npy'%PIXELS)
+        X_test -= pixel_mean
 
     return X_test, X_test_id
 
@@ -341,7 +368,7 @@ def batch_iterator_train_pseudo_label(data, y, pdata, py, BATCHSIZE, train_fn):
     Batch iterator for training wiht pseudo soft targets
     For total batch size 32, take 22 from train, and 10 from labeled test
     '''
-    pBATCHSIZE = int(round(BATCHSIZE * 0.25))
+    pBATCHSIZE = int(round(BATCHSIZE * 0.33))
     BATCHSIZE -= pBATCHSIZE
     n_samples = data.shape[0]
     #data, y = shuffle(data, y)

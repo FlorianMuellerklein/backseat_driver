@@ -31,9 +31,9 @@ ITERS = args.epochs
 BATCHSIZE = args.batchsize
 
 LR_SCHEDULE = {
-    0: 0.001,
-    60: 0.0001,
-    80: 0.00001
+    0: 0.01,
+    120: 0.001,
+    180: 0.0001
 }
 
 #encoder = LabelEncoder()
@@ -57,7 +57,7 @@ def pseudo_log_loss(pred, y, eps=1e-15):
 
 # set up theano functions to generate output by feeding data through network, any test outputs should be deterministic
 # load model
-output_layer = ST_ResNet_FullPre(X, n=5)
+output_layer = ResNet_FullPre_Wide(X, n=5, k=3)
 
 # create outputs
 output_train = lasagne.layers.get_output(output_layer)
@@ -84,8 +84,8 @@ test_acc = T.mean(T.eq(T.argmax(output_test, axis=1), T.argmax(Y, axis=1)), dtyp
 # get parameters from network and set up sgd with nesterov momentum to update parameters, l_r is shared var so it can be changed
 l_r = theano.shared(np.array(LR_SCHEDULE[0], dtype=theano.config.floatX))
 params = lasagne.layers.get_all_params(output_layer, trainable=True)
-#updates = nesterov_momentum(loss, params, learning_rate=l_r, momentum=0.9)
-updates = adam(loss, params, learning_rate=l_r)
+updates = nesterov_momentum(loss, params, learning_rate=l_r, momentum=0.9)
+#updates = adam(loss, params, learning_rate=l_r)
 
 # set up training and prediction functions
 train_fn = theano.function(inputs=[X,Y], outputs=loss, updates=updates)

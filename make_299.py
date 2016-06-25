@@ -25,7 +25,7 @@ imageSize = PIXELS * PIXELS
 num_features = imageSize * 3
 
 def load_train_cv():
-    X_train = np.empty(shape=(21794, num_features), dtype='float32')
+    X_train = np.empty(shape=(21794, 3, 299, 299), dtype='float32')
     X_train_id = []
     y_train = np.empty(shape=(21794,1), dtype='int')
     print('Read train images')
@@ -39,8 +39,8 @@ def load_train_cv():
             flbase = os.path.basename(fl)
             img = imread(fl)
             img = transform.resize(img, output_shape=(PIXELS, PIXELS, 3), preserve_range=True)
-            img = img.transpose(2, 0, 1)
-            img = np.reshape(img, (1, num_features)).astype('float32')
+            img = img.transpose(2, 0, 1).astype('float32')
+            #img = np.reshape(img, (1, num_features)).astype('float32')
             X_train[file_count] = img
             y_train[file_count] = j
             file_count += 1

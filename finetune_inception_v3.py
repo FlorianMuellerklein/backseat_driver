@@ -12,6 +12,8 @@ from lasagne.layers import helper, DenseLayer
 from lasagne.nonlinearities import softmax
 
 from sklearn.preprocessing import LabelEncoder
+from sklearn.cross_validation import train_test_split
+from sklearn.utils import shuffle
 
 from models import inception_v3
 from models import ST_ResNet_FullPre, ResNet_FullPre, ResNet_FullPre_Wide
@@ -38,10 +40,6 @@ LR_SCHEDULE = {
     10: 0.00001,
     20: 0.000001
 }
-
-PIXELS = 299
-imageSize = PIXELS * PIXELS
-num_features = imageSize
 
 """
 Set up all theano functions
@@ -89,10 +87,22 @@ load training data and start training
 '''
 encoder = LabelEncoder()
 
-train_X, train_y, test_X, test_y, encoder = load_train_cv(encoder, cache=True)
-print 'Train shape:', train_X.shape, 'Test shape:', test_X.shape
-print 'Train y shape:', train_y.shape, 'Test y shape:', test_y.shape
-print np.amax(train_X), np.amin(train_X), np.mean(train_X)
+# load data
+X_train = np.load('data/cache/X_train_%d_f32_clean.npy'%PIXELS)
+y_train = np.load('data/cache/y_train_%d_f32_clean.npy'%PIXELS)
+
+# scale data
+X_train -= 128
+X_train /= 128
+
+# split data into train and validation
+y_train = encoder.fit_transform(y_train).astype('int32')
+X_train, y_train = shuffle(X_train, y_train)
+X_train, X_test, y_train, y_test = train_test_split(X_train, y_train, test_size=0.15)
+
+print 'Train shape:', X_train.shape, 'Test shape:', X_test.shape
+print 'Train y shape:', y_train.shape, 'Test y shape:', y_test.shape
+print np.amax(X_train), np.amin(X_train), np.mean(X_train)
 
 # loop over training functions for however many iterations, print information while training
 train_eval = []
@@ -107,10 +117,10 @@ try:
         # do the training
         start = time.time()
 
-        train_loss = batch_iterator_train(train_X, train_y, BATCHSIZE, train_fn)
+        train_loss = batch_iterator_train(X_train, y_train, BATCHSIZE, train_fn)
         train_eval.append(train_loss)
 
-        valid_loss, acc_v = batch_iterator_valid(test_X, test_y, BATCHSIZE, valid_fn)
+        valid_loss, acc_v = batch_iterator_valid(X_test, y_test, BATCHSIZE, valid_fn)
         valid_eval.append(valid_loss)
         valid_acc.append(acc_v)
 

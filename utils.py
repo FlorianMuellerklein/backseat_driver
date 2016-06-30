@@ -73,11 +73,6 @@ def load_train_cv(encoder, cache=False):
         for c in range(3):
             X_train[:, c, :, :] = X_train[:, c, :, :] - mean_pixel[c]
             X_test[:, c, :, :] = X_test[:, c, :, :] - mean_pixel[c]
-    elif PIXELS == 299:
-        X_train -= 128
-        X_train /= 128
-        X_test -= 128
-        X_test /= 128
 
     else:
         # subtract per-pixel mean

@@ -60,18 +60,29 @@ f.close()
 helper.set_all_param_values(output_layer, all_params)
 
 
-'''
+
 #make predictions
 predictions = []
-for j in range((X_test.shape[0] + BATCHSIZE - 1) // BATCHSIZE):
-    sl = slice(j * BATCHSIZE, (j + 1) * BATCHSIZE)
-    X_batch = X_test[sl]
-    predictions.extend(predict_proba(X_batch))
+# load each image
+path = os.path.join('data', 'imgs', 'test', '*.jpg')
+files = glob.glob(path)
+for fl in files:
+    flbase = os.path.basename(fl)
+    img = imread(fl)
+    img = transform.resize(img, output_shape=(PIXELS, PIXELS, 3), preserve_range=True)
+    img = img.transpose(2, 0, 1)
+    img = img.astype('float32')
+
+    img_pred = np.ones(shape=(1,3,224,224), dtype='float32')
+    img_pred[0] = img
+
+    predictions.extend(predict_proba(img_pred))
+
 predictions = np.array(predictions)
 print predictions.shape
+
+
 '''
-
-
 #Test Time Augmentations
 
 PAD_CROP = 8
@@ -183,7 +194,7 @@ tta_sub_10 = np.load('data/tta_temp/predictions_tta_10.npy')
 
 
 predictions = (tta_sub_1 + tta_sub_2 + tta_sub_3 + tta_sub_4 + tta_sub_5 + tta_sub_6 + tta_sub_7 + tta_sub_8 + tta_sub_9 + tta_sub_10) / 10.0
-
+'''
 test_id = np.load('data/cache/X_test_id_%d_f32.npy'%PIXELS)
 
 '''
@@ -199,7 +210,7 @@ def create_submission(predictions, test_id):
     if not os.path.isdir('subm'):
         os.mkdir('subm')
     suffix = str(now.strftime("%Y-%m-%d-%H-%M"))
-    sub_file = os.path.join('subm', '%s_tta_last.csv'%experiment_label)
+    sub_file = os.path.join('subm', '%s_finetune.csv'%experiment_label)
     result1.to_csv(sub_file, index=False)
 
-create_submission(predictions, X_test_id)
+create_submission(predictions, test_id)

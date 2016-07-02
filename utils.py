@@ -255,7 +255,7 @@ def plot_sample(img):
     #img = img / 290.
     pyplot.show(block=True)
 
-def fast_warp(img, tf, output_shape, mode='constant', cval=0.0):
+def fast_warp(img, tf, output_shape, mode='reflect', cval=0.0):
     return transform._warps_cy._warp_fast(img, tf.params, output_shape=output_shape, mode=mode)
 
 def batch_iterator_train(data, y, BATCHSIZE, train_fn):
@@ -332,7 +332,7 @@ def batch_iterator_train(data, y, BATCHSIZE, train_fn):
             for k in range(X_batch.shape[1]):
                 X_batch_aug[j,k] = fast_warp(X_batch_aug[j,k], tform, output_shape=(PIXELS,PIXELS))
                 # pad and crop images
-                img_pad = np.pad(X_batch_aug[j,k], pad_width=((PAD_CROP,PAD_CROP), (PAD_CROP,PAD_CROP)), mode='constant')
+                img_pad = np.pad(X_batch_aug[j,k], pad_width=((PAD_CROP,PAD_CROP), (PAD_CROP,PAD_CROP)), mode='reflect')
                 X_batch_aug[j,k] = img_pad[crop_x1:crop_x2, crop_y1:crop_y2]
 
                 # flip left-right if chosen
@@ -431,7 +431,7 @@ def batch_iterator_train_pseudo_label(data, y, pdata, py, BATCHSIZE, train_fn):
             for k in range(X_batch.shape[1]):
                 X_batch_aug[j,k] = fast_warp(X_batch_aug[j,k], tform, output_shape=(PIXELS,PIXELS))
                 # pad and crop images
-                img_pad = np.pad(X_batch_aug[j,k], pad_width=((PAD_CROP,PAD_CROP), (PAD_CROP,PAD_CROP)), mode='constant')
+                img_pad = np.pad(X_batch_aug[j,k], pad_width=((PAD_CROP,PAD_CROP), (PAD_CROP,PAD_CROP)), mode='reflect')
                 X_batch_aug[j,k] = img_pad[crop_x1:crop_x2, crop_y1:crop_y2]
 
                 # flip left-right if chosen
@@ -559,7 +559,7 @@ def augment_batch(X_batch, y_batch):
         for k in range(X_batch.shape[1]):
             X_batch_aug[j,k] = fast_warp(X_batch_aug[j,k], tform, output_shape=(PIXELS,PIXELS))
             # pad and crop images
-            img_pad = np.pad(X_batch_aug[j,k], pad_width=((PAD_CROP,PAD_CROP), (PAD_CROP,PAD_CROP)), mode='constant')
+            img_pad = np.pad(X_batch_aug[j,k], pad_width=((PAD_CROP,PAD_CROP), (PAD_CROP,PAD_CROP)), mode='reflect')
             X_batch_aug[j,k] = img_pad[crop_x1:crop_x2, crop_y1:crop_y2]
 
             # flip left-right if chosen

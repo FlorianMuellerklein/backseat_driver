@@ -358,7 +358,7 @@ def ResNet_FullPre_Wide(input_var=None, n=5, k=2):
         # contains the weight -> BN -> ReLU portion, steps 3 to 5
         conv_1 = batch_norm(ConvLayer(bn_pre_relu, num_filters=filters, filter_size=(3,3), stride=first_stride, nonlinearity=rectify, pad='same', W=he_norm))
 
-        dropout = DropoutLayer(conv_1, p=0.15)
+        dropout = DropoutLayer(conv_1, p=0.35)
 
         # contains the last weight portion, step 6
         conv_2 = ConvLayer(dropout, num_filters=filters, filter_size=(3,3), stride=(1,1), nonlinearity=None, pad='same', W=he_norm)
@@ -383,8 +383,8 @@ def ResNet_FullPre_Wide(input_var=None, n=5, k=2):
     l_in = InputLayer(shape=(None, 3, PIXELS, PIXELS), input_var=input_var)
 
     # first layer, output is 16 x 64 x 64
-    l = batch_norm(ConvLayer(l_in, num_filters=n_filters[0], filter_size=(5,5), stride=(1,1), nonlinearity=rectify, pad='same', W=he_norm))
-    l = MaxPool2DLayer(l, pool_size=2)
+    l = batch_norm(ConvLayer(l_in, num_filters=n_filters[0], filter_size=(7,7), stride=(2,2), nonlinearity=rectify, pad='same', W=he_norm))
+    l = MaxPool2DLayer(l, pool_size=(3,3), stride=2, pad=2)
 
     # first stack of residual blocks, output is 32 x 64 x 64
     l = residual_block(l, first=True, filters=n_filters[1])
@@ -422,7 +422,7 @@ def ResNet_FullPre_Wide(input_var=None, n=5, k=2):
 
 # ========================================================================================================================
 
-def ST_ResNet_FullPre(input_var=None, n=5):
+def ST_ResNet_FullPre(input_var=None, n=5, k=2):
     '''
     Spatial Transformer ResNet
     'Spatial Transformer Networks', Max Jaderberg, Karen Simonyan, Andrew Zisserman, Koray Kavukcuoglu (https://arxiv.org/pdf/1506.02025v3.pdf)
@@ -432,7 +432,8 @@ def ST_ResNet_FullPre(input_var=None, n=5):
     Tweaked to be consistent with 'Identity Mappings in Deep Residual Networks', Kaiming He et al. 2016 (https://arxiv.org/abs/1603.05027)
     Formula to figure out depth: 8n+2
     '''
-    n_filters = {0:16, 1:32, 2:64, 3:128}
+    st_filters = {0:16, 1:32, 2:64, 3:128}
+    n_filters = {0:16, 1:16*k, 2:32*k, 3:64*k, 4:128*k}
 
     # create a residual learning building block with two stacked 3x3 convlayers as in paper
     def residual_block(l, increase_dim=False, projection=True, first=False, filters=16):
@@ -454,8 +455,10 @@ def ST_ResNet_FullPre(input_var=None, n=5):
         # contains the weight -> BN -> ReLU portion, steps 3 to 5
         conv_1 = batch_norm(ConvLayer(bn_pre_relu, num_filters=filters, filter_size=(3,3), stride=first_stride, nonlinearity=rectify, pad='same', W=he_norm))
 
+        dropout = DropoutLayer(conv_1, p=0.35)
+
         # contains the last weight portion, step 6
-        conv_2 = ConvLayer(conv_1, num_filters=filters, filter_size=(3,3), stride=(1,1), nonlinearity=None, pad='same', W=he_norm)
+        conv_2 = ConvLayer(dropout, num_filters=filters, filter_size=(3,3), stride=(1,1), nonlinearity=None, pad='same', W=he_norm)
 
         # add shortcut connections
         if increase_dim:
@@ -478,20 +481,20 @@ def ST_ResNet_FullPre(input_var=None, n=5):
     b[1, 1] = 1
     b = b.flatten()
 
-    loc_conv1 = batch_norm(ConvLayer(l_in, num_filters=n_filters[0], filter_size=(7,7), stride=(2,2), nonlinearity=rectify, pad='same', W=he_norm))
+    loc_conv1 = batch_norm(ConvLayer(l_in, num_filters=st_filters[0], filter_size=(7,7), stride=(2,2), nonlinearity=rectify, pad='same', W=he_norm))
     loc_pool = MaxPool2DLayer(loc_conv1, pool_size=(3,3))
 
-    loc_conv2 = residual_block(loc_pool, first=True, filters=n_filters[0])
-    loc_conv3 = residual_block(loc_conv2, filters=n_filters[0])
-    loc_conv4 = residual_block(loc_conv3, filters=n_filters[0])
+    loc_conv2 = residual_block(loc_pool, first=True, filters=st_filters[0])
+    loc_conv3 = residual_block(loc_conv2, filters=st_filters[0])
+    loc_conv4 = residual_block(loc_conv3, filters=st_filters[0])
 
-    loc_conv5 = residual_block(loc_conv4, increase_dim=True, filters=n_filters[1])
-    loc_conv6 = residual_block(loc_conv5, filters=n_filters[1])
-    loc_conv7 = residual_block(loc_conv6, filters=n_filters[1])
+    loc_conv5 = residual_block(loc_conv4, increase_dim=True, filters=st_filters[1])
+    loc_conv6 = residual_block(loc_conv5, filters=st_filters[1])
+    loc_conv7 = residual_block(loc_conv6, filters=st_filters[1])
 
-    loc_conv8 = residual_block(loc_conv7, increase_dim=True, filters=n_filters[2])
-    loc_conv9 = residual_block(loc_conv8, filters=n_filters[2])
-    loc_conv10 = residual_block(loc_conv9, filters=n_filters[2])
+    loc_conv8 = residual_block(loc_conv7, increase_dim=True, filters=st_filters[2])
+    loc_conv9 = residual_block(loc_conv8, filters=st_filters[2])
+    loc_conv10 = residual_block(loc_conv9, filters=st_filters[2])
 
     loc_bn_post_conv = BatchNormLayer(loc_conv10)
     loc_bn_post_relu = NonlinearityLayer(loc_bn_post_conv, rectify)
@@ -536,10 +539,10 @@ def ST_ResNet_FullPre(input_var=None, n=5):
     avg_pool = GlobalPoolLayer(bn_post_relu)
 
     # dropout
-    dropout = DropoutLayer(avg_pool, p=0.25)
+    dropout_last = DropoutLayer(avg_pool, p=0.25)
 
     # fully connected layer
-    network = DenseLayer(dropout, num_units=10, W=HeNormal(), nonlinearity=softmax)
+    network = DenseLayer(dropout_last, num_units=10, W=HeNormal(), nonlinearity=softmax)
 
     return network
 
@@ -746,7 +749,7 @@ def build_inception_module(name, input_layer, nfilters):
 
 def bvlc_googlenet(input_var=None):
     net = {}
-    net['input'] = InputLayer((None, 3, None, None), input_var=input_var)
+    net['input'] = InputLayer((None, 3, 224, 224), input_var=input_var)
     net['conv1/7x7_s2'] = ConvLayer(
         net['input'], 64, 7, stride=2, pad=3, flip_filters=False)
     net['pool1/3x3_s2'] = MaxPool2DLayer(
@@ -804,7 +807,7 @@ def bvlc_googlenet(input_var=None):
 
 def bvlc_googlenet_submission(input_var=None):
     net = {}
-    net['input'] = InputLayer((None, 3, None, None), input_var=input_var)
+    net['input'] = InputLayer((None, 3, 224, 224), input_var=input_var)
     net['conv1/7x7_s2'] = ConvLayer(
         net['input'], 64, 7, stride=2, pad=3, flip_filters=False)
     net['pool1/3x3_s2'] = MaxPool2DLayer(

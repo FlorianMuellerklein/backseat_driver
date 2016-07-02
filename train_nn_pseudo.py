@@ -57,7 +57,7 @@ def pseudo_log_loss(pred, y, eps=1e-15):
 
 # set up theano functions to generate output by feeding data through network, any test outputs should be deterministic
 # load model
-output_layer = ResNet_FullPre_Wide(X, n=5, k=3)
+output_layer = ResNet_FullPre_Wide(X, n=5, k=4)
 
 # create outputs
 output_train = lasagne.layers.get_output(output_layer)
@@ -96,7 +96,7 @@ load training data and start training
 '''
 
 # load the training and validation data sets
-train_X, train_y, test_X, test_y, encoder = load_train_cv(encoder, cache=True, relabel=False)
+train_X, train_y, test_X, test_y, encoder = load_train_cv(encoder, cache=True)
 train_y = train_y.astype('float32')
 test_y = test_y.astype('float32')
 pseudo_X, pseudo_labels = load_pseudo(cache=True)

@@ -1,6 +1,10 @@
 '''
 Tweaked from https://github.com/Lasagne/Recipes/blob/master/examples/resnet50/ImageNet%20Pretrained%20Network%20(ResNet-50).ipynb
+
 To use with the State Farm Distracted Driver Competition
+
+Need to download Caffe files form https://onedrive.live.com/?authkey=%21AAFW2-FVoxeVRck&id=4006CBB8476FF777%2117887&cid=4006CBB8476FF777
+And place them in 'caffe_resnet' folder within script directory
 '''
 
 import caffe

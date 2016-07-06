@@ -229,7 +229,7 @@ net['prob'] = NonlinearityLayer(net['fc1000'], nonlinearity=softmax)
 print 'Total number of layers:', len(lasagne.layers.get_all_layers(net['prob']))
 
 # load the caffe weights
-net_caffe = caffe.Net('./ResNet-50-deploy.prototxt', './ResNet-50-model.caffemodel', caffe.TEST)
+net_caffe = caffe.Net('caffe_resnet/ResNet-50-deploy.prototxt', 'caffe_resnet/ResNet-50-model.caffemodel', caffe.TEST)
 layers_caffe = dict(zip(list(net_caffe._layer_names), net_caffe.layers))
 print 'Number of layers: %i' % len(layers_caffe.keys())
 

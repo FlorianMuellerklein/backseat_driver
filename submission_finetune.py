@@ -77,6 +77,10 @@ for fl in files:
     img_pred[0] = img
     img_pred = img_pred[:, [2,1,0], :, :]
 
+    mean_pixel = [103.939, 116.779, 123.68]
+    for c in range(3):
+        img_pred[:, c, :, :] = img_pred[:, c, :, :] - mean_pixel[c]
+
     predictions.extend(predict_proba(img_pred))
 
 predictions = np.array(predictions)

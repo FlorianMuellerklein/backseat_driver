@@ -75,6 +75,7 @@ for fl in files:
 
     img_pred = np.ones(shape=(1,3,224,224), dtype='float32')
     img_pred[0] = img
+    img_pred = img_pred[:, [2,1,0], :, :]
 
     predictions.extend(predict_proba(img_pred))
 

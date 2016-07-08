@@ -21,7 +21,7 @@ import argparsing
 args, unknown_args = argparsing.parse_args()
 
 PIXELS = args.pixels
-PAD_CROP = int(PIXELS * 0.125)
+PAD_CROP = int(PIXELS * 0.21875)
 PAD_PIXELS = PIXELS + (PAD_CROP * 2)
 imageSize = PIXELS * PIXELS
 num_features = imageSize * 3
@@ -69,6 +69,12 @@ def load_train_cv(encoder, cache=False):
 
     # pixels of 224 are only used for finetuning pretrained networks so we use ImageNet channel means
     if PIXELS == 224:
+        # swap to BGR
+        for image in range(X_train.shape[0]):
+            X_train[image] = X_train[image, [2,1,0], :, :]
+        for image in range(X_test.shape[0]):
+            X_test[image] = X_test[image, [2,1,0], :, :]
+
         mean_pixel = [103.939, 116.779, 123.68]
         for c in range(3):
             X_train[:, c, :, :] = X_train[:, c, :, :] - mean_pixel[c]
@@ -235,7 +241,7 @@ def load_test_efficient(cache=False, size=PIXELS, grayscale=False):
 def load_pseudo(cache=True, size=PIXELS):
     if cache:
         X_test = np.load('data/cache/X_test_%d_f32.npy'%PIXELS)
-        pseudos = np.load('data/cache/pseudo_18078.npy')
+        pseudos = np.load('data/cache/pseudo_0175.npy')
     else:
         # don't know why it wouldn't already be cached
         # if not add lines 123 to 136

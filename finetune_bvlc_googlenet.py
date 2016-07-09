@@ -29,7 +29,6 @@ args, unknown_args = argparsing.parse_args()
 
 # training params
 experiment_label = args.label
-PIXELS = args.pixels
 ITERS = args.epochs
 BATCHSIZE = args.batchsize
 
@@ -66,6 +65,11 @@ output_test = lasagne.layers.get_output(output_layer, deterministic=True)
 loss = lasagne.objectives.categorical_crossentropy(output_train, Y)
 loss = loss.mean()
 
+# L2 regularization
+all_layers = lasagne.layers.get_all_layers(output_layer)
+l2_penalty = lasagne.regularization.regularize_layer_params(all_layers, lasagne.regularization.l2) * 0.0001
+loss = loss + l2_penalty
+
 # set up loss functions for validation dataset
 valid_loss = lasagne.objectives.categorical_crossentropy(output_test, Y)
 valid_loss = valid_loss.mean()
@@ -89,7 +93,7 @@ load training data and start training
 '''
 encoder = LabelEncoder()
 
-train_X, train_y, test_X, test_y, encoder = load_train_cv(encoder, cache=True, relabel=False)
+train_X, train_y, test_X, test_y, encoder = load_train_cv(encoder, cache=True)
 print 'Train shape:', train_X.shape, 'Test shape:', test_X.shape
 print 'Train y shape:', train_y.shape, 'Test y shape:', test_y.shape
 print np.amax(train_X), np.amin(train_X), np.mean(train_X)

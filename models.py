@@ -27,37 +27,70 @@ ortho = Orthogonal(gain='relu')
 he_norm = HeNormal(gain='relu')
 xavier_norm = GlorotNormal(gain=1.0)
 
-def vgg16(input_var=None):
+def vgg16_old(input_var=None):
     l_in = InputLayer(shape=(None, 3, PIXELS, PIXELS), input_var=input_var)
 
-    l_conv1a = Conv2DLayer(l_in, num_filters=64, filter_size=3, pad=1, W=ortho, nonlinearity=elu)
-    l_conv1b = Conv2DLayer(l_conv1a, num_filters=64, filter_size=3, pad=1, W=ortho, nonlinearity=elu)
+    l_conv1a = batch_norm(Conv2DLayer(l_in, num_filters=64, filter_size=3, pad=1, W=he_norm, nonlinearity=rectify))
+    l_conv1b = batch_norm(Conv2DLayer(l_conv1a, num_filters=64, filter_size=3, pad=1, W=he_norm, nonlinearity=rectify))
     l_pool1 = MaxPool2DLayer(l_conv1b, pool_size=2) # feature maps 64x64
 
-    l_conv2a = Conv2DLayer(l_pool1, num_filters=128, filter_size=3, pad=1, W=ortho, nonlinearity=elu)
-    l_conv2b = Conv2DLayer(l_conv2a, num_filters=128, filter_size=3, pad=1, W=ortho, nonlinearity=elu)
+    l_conv2a = batch_norm(Conv2DLayer(l_pool1, num_filters=128, filter_size=3, pad=1, W=he_norm, nonlinearity=rectify))
+    l_conv2b = batch_norm(Conv2DLayer(l_conv2a, num_filters=128, filter_size=3, pad=1, W=he_norm, nonlinearity=rectify))
     l_pool2 = MaxPool2DLayer(l_conv2b, pool_size=2) # feature maps 32x32
 
-    l_conv3a = Conv2DLayer(l_pool2, num_filters=256, filter_size=3, pad=1, W=ortho, nonlinearity=elu)
-    l_conv3b = Conv2DLayer(l_conv3a, num_filters=256, filter_size=3, pad=1, W=ortho, nonlinearity=elu)
-    l_conv3c = Conv2DLayer(l_conv3b, num_filters=256, filter_size=3, pad=1, W=ortho, nonlinearity=elu)
+    l_conv3a = batch_norm(Conv2DLayer(l_pool2, num_filters=256, filter_size=3, pad=1, W=he_norm, nonlinearity=rectify))
+    l_conv3b = batch_norm(Conv2DLayer(l_conv3a, num_filters=256, filter_size=3, pad=1, W=he_norm, nonlinearity=rectify))
+    l_conv3c = batch_norm(Conv2DLayer(l_conv3b, num_filters=256, filter_size=3, pad=1, W=he_norm, nonlinearity=rectify))
     l_pool3 = MaxPool2DLayer(l_conv3c, pool_size=2) # feature maps 16x16
 
-    l_conv4a = Conv2DLayer(l_pool3, num_filters=512, filter_size=3, pad=1, W=ortho, nonlinearity=elu)
-    l_conv4b = Conv2DLayer(l_conv4a, num_filters=512, filter_size=3, pad=1, W=ortho, nonlinearity=elu)
-    l_conv4c = Conv2DLayer(l_conv4b, num_filters=512, filter_size=3, pad=1, W=ortho, nonlinearity=elu)
+    l_conv4a = batch_norm(Conv2DLayer(l_pool3, num_filters=512, filter_size=3, pad=1, W=he_norm, nonlinearity=rectify))
+    l_conv4b = batch_norm(Conv2DLayer(l_conv4a, num_filters=512, filter_size=3, pad=1, W=he_norm, nonlinearity=rectify))
+    l_conv4c = batch_norm(Conv2DLayer(l_conv4b, num_filters=512, filter_size=3, pad=1, W=he_norm, nonlinearity=rectify))
     l_pool4 = MaxPool2DLayer(l_conv4c, pool_size=2) # feature maps 8x8
 
-    l_conv5a = Conv2DLayer(l_pool4, num_filters=512, filter_size=3, pad=1, W=ortho, nonlinearity=elu)
-    l_conv5b = Conv2DLayer(l_conv5a, num_filters=512, filter_size=3, pad=1, W=ortho, nonlinearity=elu)
-    l_conv5c = Conv2DLayer(l_conv5b, num_filters=512, filter_size=3, pad=1, W=ortho, nonlinearity=elu)
+    l_conv5a = batch_norm(Conv2DLayer(l_pool4, num_filters=512, filter_size=3, pad=1, W=he_norm, nonlinearity=rectify))
+    l_conv5b = batch_norm(Conv2DLayer(l_conv5a, num_filters=512, filter_size=3, pad=1, W=he_norm, nonlinearity=rectify))
+    l_conv5c = batch_norm(Conv2DLayer(l_conv5b, num_filters=512, filter_size=3, pad=1, W=he_norm, nonlinearity=rectify))
     l_pool5 = MaxPool2DLayer(l_conv5c, pool_size=2) # feature maps 4x4
     l_conv5_dropout = DropoutLayer(l_pool5, p=0.5)
 
-    l_hidden1 = DenseLayer(l_conv5_dropout, num_units=1024, W=he_norm, nonlinearity=elu)
+    l_hidden1 = batch_norm(DenseLayer(l_conv5_dropout, num_units=1024, W=he_norm, nonlinearity=rectify))
     l_dropout1 = DropoutLayer(l_hidden1, p=0.5)
 
-    l_hidden2 = DenseLayer(l_dropout1, num_units=1024, W=he_norm, nonlinearity=elu)
+    l_hidden2 = batch_norm(DenseLayer(l_dropout1, num_units=1024, W=he_norm, nonlinearity=rectify))
+    l_dropout2 = DropoutLayer(l_hidden2, p=0.5)
+
+    l_out = DenseLayer(l_dropout2, num_units=10, W=HeNormal(), nonlinearity=softmax)
+
+    return l_out
+
+# ========================================================================================================================
+
+def vgg16(input_var=None):
+    l_in = InputLayer(shape=(None, 3, PIXELS, PIXELS), input_var=input_var)
+
+    l_conv1a = batch_norm(Conv2DLayer(l_in, num_filters=32, filter_size=3, pad=1, W=he_norm, nonlinearity=very_leaky_rectify))
+    l_conv1b = batch_norm(Conv2DLayer(l_conv1a, num_filters=32, filter_size=3, pad=1, W=he_norm, nonlinearity=very_leaky_rectify))
+    l_pool1 = MaxPool2DLayer(l_conv1b, pool_size=(3,2), stride=2) # feature maps 64x64
+
+    l_conv2a = batch_norm(Conv2DLayer(l_pool1, num_filters=128, filter_size=3, pad=1, W=he_norm, nonlinearity=very_leaky_rectify))
+    l_conv2b = batch_norm(Conv2DLayer(l_conv2a, num_filters=128, filter_size=3, pad=1, W=he_norm, nonlinearity=very_leaky_rectify))
+    l_pool2 = MaxPool2DLayer(l_conv2b, pool_size=(3,2), stride=2) # feature maps 32x32
+
+    l_conv3a = batch_norm(Conv2DLayer(l_pool2, num_filters=128, filter_size=3, pad=1, W=he_norm, nonlinearity=very_leaky_rectify))
+    l_conv3b = batch_norm(Conv2DLayer(l_conv3a, num_filters=128, filter_size=3, pad=1, W=he_norm, nonlinearity=very_leaky_rectify))
+    l_conv3c = batch_norm(Conv2DLayer(l_conv3b, num_filters=128, filter_size=3, pad=1, W=he_norm, nonlinearity=very_leaky_rectify))
+    l_pool3 = MaxPool2DLayer(l_conv3c, pool_size=(3,2), stride=2) # feature maps 16x16
+
+    l_conv4a = batch_norm(Conv2DLayer(l_pool3, num_filters=256, filter_size=3, pad=1, W=he_norm, nonlinearity=very_leaky_rectify))
+    l_conv4b = batch_norm(Conv2DLayer(l_conv4a, num_filters=256, filter_size=3, pad=1, W=he_norm, nonlinearity=very_leaky_rectify))
+    l_conv4c = batch_norm(Conv2DLayer(l_conv4b, num_filters=256, filter_size=3, pad=1, W=he_norm, nonlinearity=very_leaky_rectify))
+    l_pool4 = MaxPool2DLayer(l_conv4c, pool_size=(3,2), stride=2) # feature maps 8x8
+
+    l_hidden1 = batch_norm(DenseLayer(l_pool4, num_units=1024, W=he_norm, nonlinearity=very_leaky_rectify))
+    l_dropout1 = DropoutLayer(l_hidden1, p=0.5)
+
+    l_hidden2 = batch_norm(DenseLayer(l_dropout1, num_units=1024, W=he_norm, nonlinearity=very_leaky_rectify))
     l_dropout2 = DropoutLayer(l_hidden2, p=0.5)
 
     l_out = DenseLayer(l_dropout2, num_units=10, W=HeNormal(), nonlinearity=softmax)
@@ -366,7 +399,7 @@ def ResNet_FullPre_Wide(input_var=None, n=5, k=2):
         # add shortcut connections
         if increase_dim:
             # projection shortcut, as option B in paper
-            projection = ConvLayer(l, num_filters=filters, filter_size=(1,1), stride=(2,2), nonlinearity=None, pad='same', b=None)
+            projection = ConvLayer(bn_pre_relu, num_filters=filters, filter_size=(1,1), stride=(2,2), nonlinearity=None, pad='same', b=None)
             block = ElemwiseSumLayer([conv_2, projection])
 
         elif first:
@@ -384,7 +417,7 @@ def ResNet_FullPre_Wide(input_var=None, n=5, k=2):
 
     # first layer, output is 16 x 64 x 64
     l = batch_norm(ConvLayer(l_in, num_filters=n_filters[0], filter_size=(7,7), stride=(2,2), nonlinearity=rectify, pad='same', W=he_norm))
-    l = MaxPool2DLayer(l, pool_size=(3,3), stride=2, pad=2)
+    l = MaxPool2DLayer(l, pool_size=(3,3), stride=2, pad=0)
 
     # first stack of residual blocks, output is 32 x 64 x 64
     l = residual_block(l, first=True, filters=n_filters[1])
@@ -463,7 +496,12 @@ def ST_ResNet_FullPre(input_var=None, n=5, k=2):
         # add shortcut connections
         if increase_dim:
             # projection shortcut, as option B in paper
-            projection = ConvLayer(l, num_filters=filters, filter_size=(1,1), stride=(2,2), nonlinearity=None, pad='same', b=None)
+            projection = ConvLayer(bn_pre_relu, num_filters=filters, filter_size=(1,1), stride=(2,2), nonlinearity=None, pad='same', b=None)
+            block = ElemwiseSumLayer([conv_2, projection])
+
+        elif first:
+            # projection shortcut, as option B in paper
+            projection = ConvLayer(l, num_filters=filters, filter_size=(1,1), stride=(1,1), nonlinearity=None, pad='same', b=None)
             block = ElemwiseSumLayer([conv_2, projection])
 
         else:
@@ -509,28 +547,28 @@ def ST_ResNet_FullPre(input_var=None, n=5, k=2):
 
     # Classifier Network
     # first layer, output is 16 x 64 x 64
-    l = batch_norm(ConvLayer(l_trans1, num_filters=16, filter_size=(5,5), stride=(1,1), nonlinearity=rectify, pad='same', W=he_norm))
-    l = MaxPool2DLayer(l, pool_size=2)
+    l = batch_norm(ConvLayer(l_trans1, num_filters=n_filters[0], filter_size=(7,7), stride=(2,2), nonlinearity=rectify, pad='same', W=he_norm))
+    l = MaxPool2DLayer(l, pool_size=(3,3), stride=2, pad=2)
 
     # first stack of residual blocks, output is 32 x 64 x 64
-    l = residual_block(l, first=True, filters=n_filters[0])
+    l = residual_block(l, first=True, filters=n_filters[1])
     for _ in range(1,n):
-        l = residual_block(l, filters=n_filters[0])
-
-    # second stack of residual blocks, output is 64 x 32 x 32
-    l = residual_block(l, increase_dim=True, filters=n_filters[1])
-    for _ in range(1,(n+2)):
         l = residual_block(l, filters=n_filters[1])
 
-    # third stack of residual blocks, output is 128 x 16 x 16
+    # second stack of residual blocks, output is 64 x 32 x 32
     l = residual_block(l, increase_dim=True, filters=n_filters[2])
     for _ in range(1,(n+2)):
         l = residual_block(l, filters=n_filters[2])
 
-    # third stack of residual blocks, output is 256 x 8 x 8
+    # third stack of residual blocks, output is 128 x 16 x 16
     l = residual_block(l, increase_dim=True, filters=n_filters[3])
-    for _ in range(1,n):
+    for _ in range(1,(n+2)):
         l = residual_block(l, filters=n_filters[3])
+
+    # third stack of residual blocks, output is 256 x 8 x 8
+    l = residual_block(l, increase_dim=True, filters=n_filters[4])
+    for _ in range(1,n):
+        l = residual_block(l, filters=n_filters[4])
 
     bn_post_conv = BatchNormLayer(l)
     bn_post_relu = NonlinearityLayer(bn_post_conv, rectify)
